@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-
+#include "util.h"
 
 void usage(char* argv[]);
 
@@ -43,16 +43,15 @@ int main(int argc, char* argv[]){
 	CassError err_code = cass_future_error_code(connect_future); //blocks till return
 
 	//prints a string description of the error code
-	prinft("Connection status: %s\n", cass_error_desc(err_code));
+	printf("Connection status: %s\n", cass_error_desc(err_code));
 
 	/* INSERTING THE NEW USER */
 	//cassandra statement variable
-	CassStatement* add_user_statement= cass_statement_new("INSERT INTO insta.users 
-			(user_name, ip_addr) VALUES (?, ?)", 2);
+	CassStatement* add_user_statement= cass_statement_new("INSERT INTO insta.users (user_name, ip_addr) VALUES (?, ?)", 2);
 	
 	//binding command line args (user_name and ip) to the INSERT statement from above
-	cass_statement_bind_string(add_user, 0, user_name);
-	cass_statement_bind_int32(add_user, 1, ip_addr);
+	cass_statement_bind_string(add_user_statement, 0, user_name);
+	cass_statement_bind_int32(add_user_statement, 1, ip_addr);
 
 	//it looks like we can use the CassFuture return type to do some error checking
 	// -- worth reading throught that section of the api for more details and 
@@ -61,10 +60,9 @@ int main(int argc, char* argv[]){
 	err_code = cass_future_error_code(insert_future); //blocks till return
 	
 
-	prinft("Insertion status: %s\n", cass_error_desc(err_code));
+	printf("Insertion status: %s\n", cass_error_desc(err_code));
 
 	/* CLEANUP OF CASSANDRA VARS */
-	cass_error_result_free(err_code);
 	cass_statement_free(add_user_statement);
 	cass_future_free(connect_future);  // Free the future from our connect command
 	cass_future_free(insert_future); // Free the future from our insert command

@@ -10,7 +10,6 @@ cass_add_user: cass_add_user.c
 practice: practice.c
 	gcc $(CFLAGS) -o $@ $^ $(MONGOFLAGS)
 
-
 .PHONY: clean
 clean:
-	rm -f practice
+	rm -f practice cass_add_user
