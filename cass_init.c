@@ -1,7 +1,8 @@
 #include <cassandra.h>
-#include <stdin.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 #define KEYSPACE "Insta"
 #define TABLE "Users"
@@ -39,24 +40,23 @@ int main(){
 	// it might not be optimal as they all have to be free'd which may imply that
 	// they are resource intensive...
 	CassStatement * create_keyspace; 
-	CassStatement * bind_to_keyspace;
+//	CassStatement * bind_to_keyspace;
 	CassStatement * create_table;
-	CassFuture * statement_future; // will be used to track exicution status
-	CassError rc;	   
+	CassFuture * statement_future; // will be used to track exicution status   
 
 	/* Create keyspace */
 	
-	create_keyspace = cass_statement_new("CREATE KEYSPACE ? WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 2}", 1);
+	create_keyspace = cass_statement_new("CREATE KEYSPACE ? WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 2}", 1);
 	
-	cass_statement_bind_string(create_keyspace, 0, KEYSPACE); //bind vars in statement
+	//cass_statement_bind_string(create_keyspace, 0, KEYSPACE); //bind vars in statement
 	
 	statement_future = cass_session_execute(session, create_keyspace);
 	// free keyspace statement
 	cass_statement_free(create_keyspace);
 	// error check
-	if((rc = cass_future_error_code(statement_future) != CASS_OK){
+	if((rc = cass_future_error_code(statement_future)) != CASS_OK){
 		printf("Create keyspace result: %s\n", cass_error_desc(rc));
-
+	}
 	/* Bind to keyspace */
 
 /*	bind_to_keyspace = cass_statement_new("USE ?", 1);
@@ -90,9 +90,9 @@ int main(){
 	// free bind statement
 	cass_statement_free(create_table);
 	// error check
-	if((rc = cass_future_error_code(statement_future) != CASS_OK){
+	if((rc = cass_future_error_code(statement_future)) != CASS_OK){
 		printf("Create table result: %s\n", cass_error_desc(rc));
-
+	}
 
 	/* Free the session, cluster, and statement future */
 	cass_future_free(statement_future);
