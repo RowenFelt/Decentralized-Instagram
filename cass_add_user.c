@@ -17,6 +17,7 @@ int main(int argc, char* argv[]){
 	// variables filled from the command line
 	char* user_name;
 	uint32_t ip_addr;
+	CassError err_code;
 	
 	//handle command line args
 	if(argc != 3){
@@ -35,19 +36,26 @@ int main(int argc, char* argv[]){
 	CassSession* session = cass_session_new();
 	
 	// add contact points -- are these the same as seeds?
-	cass_cluster_set_contact_points(cluster," 140.233.20.181"); //That's Ricker's ip
+	err_code = cass_cluster_set_contact_points(cluster," 127.0.0.1"); //That's Ricker's ip
+
+	if(err_code == CASS_OK){
+		printf("Contact poins set successfully.\n");
+	}
+  else{
+		printf("%s\n", cass_error_desc(err_code));
+	}
 
 	// connect to the cluster and wait until the futer variable returns, then 
 	// error check it
 	CassFuture* connect_future = cass_session_connect(session, cluster);
-	CassError err_code = cass_future_error_code(connect_future); //blocks till return
+	err_code = cass_future_error_code(connect_future); //blocks till return
 
 	//prints a string description of the error code
 	printf("Connection status: %s\n", cass_error_desc(err_code));
 
 	/* INSERTING THE NEW USER */
 	//cassandra statement variable
-	CassStatement* add_user_statement= cass_statement_new("INSERT INTO insta.users (user_name, ip_addr) VALUES (?, ?)", 2);
+	CassStatement* add_user_statement= cass_statement_new("INSERT INTO insta.user (name, ip_addr) VALUES (?, ?)", 2);
 	
 	//binding command line args (user_name and ip) to the INSERT statement from above
 	cass_statement_bind_string(add_user_statement, 0, user_name);
