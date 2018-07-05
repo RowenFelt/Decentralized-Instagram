@@ -1,7 +1,7 @@
 CFLAGS=-g -Wall -pedantic -pthread
 MONGOFLAGS=-I/usr/include/libmongoc-1.0 -I/usr/include/libbson-1.0
 
-CASSFLAGS=-L/home/rfelt/instaclone/cpp-driver/build -I/home/rfelt/instaclone/cpp-driver/include/ -lcassandra 
+CASSFLAGS=-L$(HOME)/instaclone/cpp-driver/build -I$(HOME)/instaclone/cpp-driver/include/ -lcassandra 
 
 .PHONY: all
 all: practice cass_add_user
