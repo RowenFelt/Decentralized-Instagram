@@ -11,8 +11,11 @@
 #include <stdio.h>
 
 #include "util.h"
+#include "cass_user.h"
 
 static int init_error(CassFuture* statement_future);
+static int session_connection(struct cass_connect* connection);
+static int tear_down_connection(struct cass_connect* connection);
 
 int keyspace_table_init(char* keyspace, char* table){
 	// Defining the columns (fields) of the table and their associated types
@@ -98,35 +101,12 @@ int keyspace_table_init(char* keyspace, char* table){
 
 
 int add_user(char* username, char* ip){
-	CassError err_code;
-	CassCluster* cluster;
-	CassSession* session;
-	CassFuture* connect_future;
 	CassStatement* add_user_statement;
 	CassFuture* insert_future;
 	CassInet ip_inet;
-	
-  /* SETTING UP THE CASSANDRA CONNECTION */
-  cluster = cass_cluster_new();
-  session = cass_session_new();
+	struct cass_connect connection;
 
-  // add contact points -- are these the same as seeds?
-  err_code = cass_cluster_set_contact_points(cluster," 127.0.0.1"); //That's Ricker's ip
-
-  if(err_code == CASS_OK){
-    printf("Contact poins set successfully.\n");
-  }
-  else{
-    printf("%s\n", cass_error_desc(err_code));
-  }
-
-  // connect to the cluster and wait until the futer variable returns, then 
-  // error check it
-  connect_future = cass_session_connect(session, cluster);
-  err_code = cass_future_error_code(connect_future); //blocks till return
-
-  //prints a string description of the error code
-  printf("Connection status: %s\n", cass_error_desc(err_code));
+	session_connection(&connection);
 
   /* INSERTING THE NEW USER */
   //cassandra statement variable
@@ -140,19 +120,16 @@ int add_user(char* username, char* ip){
   //it looks like we can use the CassFuture return type to do some error checking
   // -- worth reading throught that section of the api for more details and 
   //    finding out how to interperate the status of a variable of type CassFuture 
-  insert_future = cass_session_execute(session, add_user_statement);
-  err_code = cass_future_error_code(insert_future); //blocks till return
+  insert_future = cass_session_execute(connection.session, add_user_statement);
+  connection.err_code = cass_future_error_code(insert_future); //blocks till return
 
 
-  printf("Insertion status: %s\n", cass_error_desc(err_code));
+  printf("Insertion status: %s\n", cass_error_desc(connection.err_code));
 
   /* CLEANUP OF CASSANDRA VARS */
   cass_statement_free(add_user_statement);
-  cass_future_free(connect_future);  // Free the future from our connect command
   cass_future_free(insert_future); // Free the future from our insert command
-  cass_session_free(session); // Free the session
-  cass_cluster_free(cluster); //Free the cluster
-
+	tear_down_connection(&connection);
 	return 0;
 }
 
@@ -245,3 +222,39 @@ static int init_error(CassFuture* statement_future){
 	}  
 }
 
+
+static int session_connection(struct cass_connect* connection){
+	/* SETTING UP THE CASSANDRA CONNECTION */
+  connection->cluster = cass_cluster_new();
+  connection->session = cass_session_new();
+
+  // add contact points -- are these the same as seeds?
+  connection->err_code = cass_cluster_set_contact_points(connection->cluster," 127.0.0.1");
+
+  if(connection->err_code == CASS_OK){
+    printf("Contact poins set successfully.\n");
+  }
+  else{
+    printf("%s\n", cass_error_desc(connection->err_code));
+  }
+
+  // connect to the cluster and wait until the futer variable returns, then 
+  // error check it
+  connection->connect_future = cass_session_connect(connection->session, connection->cluster);
+  connection->err_code = cass_future_error_code(connection->connect_future); //blocks till return
+
+  //prints a string description of the error code
+  if(!init_error(connection->connect_future)){
+		printf("Connection status: %s\n", cass_error_desc(connection->err_code));
+		return connection->err_code;
+	}
+	return 0;
+}
+
+
+static int tear_down_connection(struct cass_connect* connection){
+	cass_future_free(connection->connect_future);  // Free the future from our connect command
+	cass_session_free(connection->session); // Free the session
+  cass_cluster_free(connection->cluster); //Free the cluster
+	return 0;
+}

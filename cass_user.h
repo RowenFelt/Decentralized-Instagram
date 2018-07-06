@@ -7,6 +7,13 @@
 #ifndef _CASS_USER
 #define _CASS_USER
 
+struct cass_connect {
+	CassError err_code;
+  CassCluster* cluster;
+  CassSession* session;
+  CassFuture* connect_future;
+};
+
 int keyspace_table_init(char* keyspace, char* table);
 int add_user(char* username, char* ip);
 int get_user_ip(char* keyspace, char* table, char* username);
