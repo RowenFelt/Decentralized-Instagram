@@ -9,6 +9,17 @@
 
 
 int main(){
+	//Defining the names of the table and keyspace we are creating
+	char* keyspace = KEYSPACE;
+	char* table = TABLE;
+
+	// Defining the columns (fields) of the table and their associated types
+	char* primary_field = "name"; // The name of the primary field in a row	
+	char* primary_type = "text";  // The CQL type (e.g. text, int) of said field
+	char* field_1 = "ip_addr";
+	char* type_1 = "int";
+
+
 	/* SETUP AND CONNECT TO CLUSTER*/
 	CassCluster* cluster = cass_cluster_new();
 	CassSession* session = cass_session_new();
@@ -39,27 +50,30 @@ int main(){
 	// Look in to the best practices of declaring all these cass objects at once,
 	// it might not be optimal as they all have to be free'd which may imply that
 	// they are resource intensive...
-	CassStatement * create_keyspace; 
+//	CassStatement * create_keyspace; 
 //	CassStatement * bind_to_keyspace;
-	CassStatement * create_table;
+//	CassStatement * create_table;
 	CassFuture * statement_future; // will be used to track exicution status   
 
 	/* Create keyspace */
+	char create_keyspace_query[1024];
+	sprintf(create_keyspace_query, "CREATE KEYSPACE %s WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 2}", KEYSPACE);
 	
-	create_keyspace = cass_statement_new("CREATE KEYSPACE ? WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 2}", 1);
-	
-	//cass_statement_bind_string(create_keyspace, 0, KEYSPACE); //bind vars in statement
+	CassStatement* create_keyspace = cass_statement_new(create_keyspace_query, 0);
 	
 	statement_future = cass_session_execute(session, create_keyspace);
+
 	// free keyspace statement
 	cass_statement_free(create_keyspace);
+
 	// error check
 	if((rc = cass_future_error_code(statement_future)) != CASS_OK){
 		printf("Create keyspace result: %s\n", cass_error_desc(rc));
 	}
-	/* Bind to keyspace */
 
-/*	bind_to_keyspace = cass_statement_new("USE ?", 1);
+	/* Bind to keyspace */
+/*
+	bind_to_keyspace = cass_statement_new("USE ?", 1);
 
 	cass_statement_bind_string(bind_to_keyspace, 0, KEYSPACE); 
 	
@@ -70,24 +84,15 @@ int main(){
 	if((rc = cass_future_error_code(statement_future) != CASS_OK){
 		printf("Bind keyspace result: %s\n", cass_error_desc(rc));
 */
-
 	/* Create table */
+	char create_statement_query[1024];
+	sprintf(create_keyspace_query, "CREATE TABLE %s.%s(%s %s PRIMARY KEY, %s %s);",
+			KEYSPACE, TABLE, primary_field, primary_type, field_1, type_1);
 
-	create_table = cass_statement_new("CREATE TABLE ?.?(? ? PRIMARY KEY, ? ? )", 6);
-
-	cass_statement_bind_string(create_table, 0, KEYSPACE); 
-	cass_statement_bind_string(create_table, 1, TABLE);
-	
-	//Defining table fields
-	cass_statement_bind_string(create_table, 2, "name");
-	cass_statement_bind_string(create_table, 3, "text");
-
-	cass_statement_bind_string(create_table, 4, "ip_addr");
-	cass_statement_bind_string(create_table, 5, "int");
-	
-
+	CassStatement *	create_table = cass_statement_new(create_statement_query, 0);
 	statement_future = cass_session_execute(session, create_table);
-	// free bind statement
+	
+	// free table statement
 	cass_statement_free(create_table);
 	// error check
 	if((rc = cass_future_error_code(statement_future)) != CASS_OK){
