@@ -40,7 +40,6 @@ int main(int argc, char* argv[]){
 	char* return_column = "ip_addr"; //The name of the column we want returned
 	char* query_column = "name"; //The name of the column we are querying(primary column) 
 	char* query_target = argv[1];//The user's name provided from the command line
-	uint32_t ip; //The IP address we will return
 
 	/* construct the query statement */
 	char get_user_query[1024];
@@ -68,7 +67,7 @@ int main(int argc, char* argv[]){
 
 	//get first row from result - returns CassRow
 	const CassRow* first_row = cass_result_first_row(user_query_result);
-       	cass_result_free(user_query_result);	
+  // cass_result_free(user_query_result);	
 
 	//get value from specific column - returns CassValue
 	// If we are finding IP addresses of nodes users and/or their mirrors, and
@@ -76,16 +75,19 @@ int main(int argc, char* argv[]){
 	// to find multiple IP's and then return all of them to the higher layer
 	const CassValue* cass_ip = cass_row_get_column_by_name(first_row, return_column); 
 
+	CassInet ip;
 	//get a uint32_t from the CassValue - returns cass_int32_t
-	if(cass_value_get_uint32(cass_ip, &ip) != CASS_OK){
-		printf("Error converting cass value to standard value");
+	if(cass_value_get_inet(cass_ip, &ip) != CASS_OK){
+		printf("Error converting cass value to standard value\n");
 	}
-
+	
+	char ip_string[16];
+	cass_inet_string(ip, ip_string);
+	
+	printf("%s's ip address is: %s\n", query_target, ip_string);
 	cass_session_free(session);
 	cass_cluster_free(cluster);
-
-	printf("%s's ip address is: %s\n", query_target, ip_to_string(ip));
-	return ip;
+	return 0;
 }
 
 

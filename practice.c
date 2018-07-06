@@ -18,9 +18,13 @@
 
 #include "cass_user.h"
 
+#define KEYSPACE "insta"
+#define TABLE "user"
+
 int main(int argc, char *argv[])
 {
-  keyspace_table_init("insta", "user");
+  keyspace_table_init(KEYSPACE, TABLE);
 	add_user("rowen", "1.2.3.4");
+	get_user_ip(KEYSPACE, TABLE, "rowen");
 	return 0;
 }
