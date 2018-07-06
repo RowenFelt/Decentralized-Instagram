@@ -14,3 +14,12 @@ uint32_t string_to_ip(char *ipstr){
 
 	return ip;
 }
+
+char* ip_to_string(uint32_t ip){
+	static char ipstr[16];
+
+	snprintf(ipstr, 16, "%hhu.%hhu.%hhu.%hhu", ip & 0xff, (ip & 0xff00) >> 8,
+			(ip & 0xff0000) >> 16, (ip & 0xff000000) >> 24);
+	
+	return ipstr;
+}
