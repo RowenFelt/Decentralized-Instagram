@@ -8,15 +8,11 @@
 #define TABLE "user"
 
 
-<<<<<<< HEAD
-int main(){;
-=======
 int main(int argc, char* argv[]){
 	//Defining the names of the table and keyspace we are creating
 	char* keyspace = KEYSPACE;
 	char* table = TABLE;
 
->>>>>>> 8b2b0e381211a39adbc54cae023b1534e4c0e236
 	// Defining the columns (fields) of the table and their associated types
 	char* primary_field = "name"; // The name of the primary field in a row	
 	char* primary_type = "text";  // The CQL type (e.g. text, int) of said field
@@ -50,29 +46,18 @@ int main(int argc, char* argv[]){
  
 
 	/* CREATE KEYSPACE AND TABLE */
-<<<<<<< HEAD
-	CassStatement * create_keyspace; 
-	CassStatement * create_table;
-	CassFuture * statement_future; // will be used to track exicution status   
-=======
-	
 	// Look in to the best practices of declaring all these cass objects at once,
 	// it might not be optimal as they all have to be free'd which may imply that
 	// they are resource intensive...
   CassStatement* create_keyspace; 
   CassStatement* create_table;
 	CassFuture* statement_future; // will be used to track execution status   
->>>>>>> 8b2b0e381211a39adbc54cae023b1534e4c0e236
 
 	/* Create keyspace */
 	char create_keyspace_query[1024];
 	sprintf(create_keyspace_query, "CREATE KEYSPACE %s WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 2}", keyspace);
 	
 	create_keyspace = cass_statement_new(create_keyspace_query, 0);
-<<<<<<< HEAD
-=======
-	
->>>>>>> 8b2b0e381211a39adbc54cae023b1534e4c0e236
 	statement_future = cass_session_execute(session, create_keyspace);
 
 	// free keyspace statement
@@ -83,18 +68,10 @@ int main(int argc, char* argv[]){
 		printf("Create keyspace result: %s\n", cass_error_desc(rc));
 	}
 
-<<<<<<< HEAD
-	
-	/* Create table */
-	char create_table_query[1024];
-	sprintf(create_table_query, "CREATE TABLE %s.%s (%s %s PRIMARY KEY, %s %s)",
-			 KEYSPACE, TABLE, primary_field, primary_type, field_1, type_1);
-=======
 	/* Create table */
 	char create_table_query[1024];
 	sprintf(create_table_query, "CREATE TABLE %s.%s(%s %s PRIMARY KEY, %s %s)",
 			keyspace, table, primary_field, primary_type, field_1, type_1);
->>>>>>> 8b2b0e381211a39adbc54cae023b1534e4c0e236
 
 	create_table = cass_statement_new(create_table_query, 0);
 	statement_future = cass_session_execute(session, create_table);
