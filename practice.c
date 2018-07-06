@@ -16,7 +16,11 @@
 #include <pthread.h>
 #include <time.h>
 
+#include "cass_user.h"
+
 int main(int argc, char *argv[])
 {
-  return 0;
+  keyspace_table_init("insta", "user");
+	add_user("rowen", "1.2.3.4");
+	return 0;
 }
