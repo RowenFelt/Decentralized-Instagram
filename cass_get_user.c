@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
 	cass_session_free(session);
 	cass_cluster_free(cluster);
 
-	printf("%s's ip address is: %s\n", query_target, string_to_ip(ip));
+	printf("%s's ip address is: %s\n", query_target, ip_to_string(ip));
 	return ip;
 }
 
