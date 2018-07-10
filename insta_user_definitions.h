@@ -25,6 +25,8 @@ struct personal_data {
 
 int init_user(void);
 int search_user(char *username);
+int insert_user(struct user *new_user);
+int delete_user(uint64_t user_id);
 int pull_user_profile(uint64_t user_id);
 
 #endif /* _INSTA_USER_DEFINITIONS */
