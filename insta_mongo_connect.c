@@ -53,3 +53,15 @@ mongo_user_connect(struct mongo_user_connection *cn, char *db_name, char *coll_n
   return 0;
 }
 
+int
+mongo_user_teardown(struct mongo_user_connection *cn)
+{
+	/* Release our handles and clean up libmongoc */
+  mongoc_collection_destroy (cn->collection);
+  mongoc_database_destroy (cn->database);
+  mongoc_uri_destroy (cn->uri);
+  mongoc_client_destroy (cn->client);
+  mongoc_cleanup ();
+	return 0;
+}
+

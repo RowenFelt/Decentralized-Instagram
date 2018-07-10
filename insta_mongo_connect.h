@@ -20,6 +20,7 @@ struct mongo_user_connection {
 };
 
 int mongo_user_connect(struct mongo_user_connection *cn, char *db_name, char *coll_name);
+int mongo_user_teardown(struct mongo_user_connection *cn);
 
 #endif /* _INSTA_MONGO_CONNECT */
 
