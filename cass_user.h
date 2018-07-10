@@ -7,6 +7,8 @@
 #ifndef _CASS_USER
 #define _CASS_USER
 
+#include <cassandra.h>
+
 struct cass_connect {
 	CassError err_code;
   CassCluster* cluster;
