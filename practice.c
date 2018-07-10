@@ -1,5 +1,6 @@
 /*
  * practice.c
+ * tests basic cassandra methods
  * Authors: Rowen Felt and Campbell Boswell
  */
 
