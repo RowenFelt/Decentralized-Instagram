@@ -101,7 +101,10 @@ int add_user(char *username, char *ip){
 }
 
 
-int get_user_ip(char *keyspace, char *table, char *username){
+int get_user_ip_by_username(char *keyspace, char *table, char *username){
+	/* searches for a user using their username, prints IP address 
+	 * and returns number of results */
+
 	/* SETUP CASSANDRA CONNECTION */
   struct cass_connect connection;
 	char *return_column;
@@ -111,10 +114,10 @@ int get_user_ip(char *keyspace, char *table, char *username){
 	CassStatement *get_user;
 	CassFuture *statement_future;
 	const CassResult *user_query_result;
-	const CassRow *first_row;
 	const CassValue *cass_ip;
 	CassInet ip;
 	char ip_string[16];
+	int result;
   
 	session_connection(&connection);
 
@@ -144,26 +147,29 @@ int get_user_ip(char *keyspace, char *table, char *username){
   if(user_query_result == NULL){
     exit(2);
   }
+	
+	//count the number of results
+	result = cass_result_row_count(user_query_result);
 
   //get first row from result - returns CassRow
-  first_row = cass_result_first_row(user_query_result);
+  //first_row = cass_result_first_row(user_query_result);
+	CassIterator *iterator = cass_iterator_from_result(user_query_result);
+	while(cass_iterator_next(iterator)) {
+		const CassRow *row = cass_iterator_get_row(iterator);
+		cass_ip = cass_row_get_column_by_name(row, return_column);
 
-  //get value from specific column - returns CassValue
-  // If we are finding IP addresses of nodes users and/or their mirrors, and
-  // we are searching for a unique user id, then here we can check multiple columns
-  // to find multiple IP's and then return all of them to the higher layer
-  cass_ip = cass_row_get_column_by_name(first_row, return_column);
+		if(cass_value_get_inet(cass_ip, &ip) != CASS_OK){
+			printf("Error converting cass value to standard value\n");
+		}
 
-  //get a uint32_t from the CassValue - returns cass_int32_t
-  if(cass_value_get_inet(cass_ip, &ip) != CASS_OK){
-    printf("Error converting cass value to standard value\n");
-  }
- 
-  cass_inet_string(ip, ip_string);
+		cass_inet_string(ip, ip_string);
 
-  printf("%s's ip address is: %s\n", query_target, ip_string);
+	  printf("%s's ip address is: %s\n", query_target, ip_string);	
+	}
+	cass_iterator_free(iterator);
+
 	tear_down_connection(&connection); 
-	return 0;
+	return result;
 }
 
 

@@ -36,13 +36,14 @@ search_user_by_name(char *username, int flags)
 {
 	/* search for a user in the mongoDB list of followers followees or the Cassandra
 	 * database of users using the respective flags INSTA_FOLLOWER, INSTA_FOLLOWEE,
-	 * INSTA_UNKNOWN */ 
+	 * INSTA_UNKNOWN. Return number of results found or -1 on failure */ 
 	struct mongo_user_connection cn;
 	mongoc_cursor_t *cursor;
 	bson_t *query;
 	const bson_t *doc;
 	bson_error_t error;
 	char *str;
+	int result = 0;
 
 	if(flags == INSTA_FOLLOWER || flags == INSTA_FOLLOWEE) {
 		cn.uri_string = "mongodb://localhost:27017";
@@ -55,7 +56,8 @@ search_user_by_name(char *username, int flags)
 		);
 		cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
 		while (mongoc_cursor_next (cursor, &doc)) {
-      str = bson_as_canonical_extended_json (doc, NULL);
+      result++;
+			str = bson_as_canonical_extended_json (doc, NULL);
       printf ("%s\n", str);
       bson_free (str);
 		}
@@ -65,14 +67,22 @@ search_user_by_name(char *username, int flags)
 
 		mongoc_cursor_destroy (cursor);
 		bson_destroy (query);
-		return mongo_user_teardown(&cn);
+		if(result == 0){
+			result = mongo_user_teardown(&cn);
+		}
 	}
 	else if(flags == INSTA_UNKNOWN){
-		get_user_ip(INSTA_DB, CASS_TABLE, username);	
+		get_user_ip_by_username(INSTA_DB, CASS_TABLE, username);	
 	}
-	return 0;
+	return result;
 }
 
+
+int 
+search_user_by_id(uint64_t user_id)
+{
+	return 0;
+}
 
 
 int

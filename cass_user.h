@@ -18,6 +18,8 @@ struct cass_connect {
 
 int keyspace_table_init(char* keyspace, char* table);
 int add_user(char* username, char* ip);
-int get_user_ip(char* keyspace, char* table, char* username);
+int get_user_ip_by_username(char* keyspace, char* table, char* username);
+int get_user_ip_by_id(char* keyspace, char* table, uint64_t user_id);
+
 
 #endif /* _CASS_USER */

@@ -33,13 +33,13 @@ mongo_user_connect(struct mongo_user_connection *cn, char *db_name, char *coll_n
       "error message:       %s\n",
       cn->uri_string,
       cn->error.message);
-    return EXIT_FAILURE;
+    return -1;
   }
 
   /* Create a new client instance */
   cn->client = mongoc_client_new_from_uri (cn->uri);
   if (!cn->client) {
-    return EXIT_FAILURE;
+    return -1;
   }
 
   /*

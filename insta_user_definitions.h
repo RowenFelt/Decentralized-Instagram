@@ -36,6 +36,7 @@ struct personal_data {
 
 int init_user(void);
 int search_user_by_name(char *username, int flags);
+int search_user_by_id(uint64_t user_id);
 int insert_user(struct user *new_user);
 int delete_user(uint64_t user_id);
 int pull_user_profile(uint64_t user_id);
