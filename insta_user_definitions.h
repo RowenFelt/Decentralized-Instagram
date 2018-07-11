@@ -19,8 +19,14 @@ struct user {
   char *image_path;
   struct personal_data *bio;
   int fragmentation;
-  uint64_t *followers;
-  uint64_t *following;
+  struct insta_relations *followers;
+  struct insta_relations *following;
+};
+
+struct insta_relations {
+	int direction; // 0 for followed, 1 for following
+	int count;
+	uint64_t *user_ids;
 };
 
 struct personal_data {
@@ -29,7 +35,7 @@ struct personal_data {
 };
 
 int init_user(void);
-int search_user(char *username, int flags);
+int search_user_by_name(char *username, int flags);
 int insert_user(struct user *new_user);
 int delete_user(uint64_t user_id);
 int pull_user_profile(uint64_t user_id);
