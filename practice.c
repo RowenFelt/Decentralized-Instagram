@@ -25,8 +25,9 @@
 int main(int argc, char *argv[])
 {
   keyspace_table_init(KEYSPACE, TABLE);
-	add_user("rowen", "4.5.6.7");
-	add_user("rowen", "1.2.3.4");
+	add_user(12521512, "rowen", "4.5.6.7");
+	add_user(713717, "rowen", "1.2.3.4");
 	get_user_ip_by_username(KEYSPACE, TABLE, "rowen");
+	get_user_ip_by_id(KEYSPACE, TABLE, 7137170);
 	return 0;
 }
