@@ -35,12 +35,12 @@ int main(int argc, char *argv[])
 	followers.direction = 0;
 	followers.count = 5;
 	uint64_t follower_ids[5] = {12, 3, 4, 16, 5};
-	memcpy(followers.user_ids, follower_ids, 5);
+	followers.user_ids = follower_ids;
 	cb.followers = &followers;
 	following.direction = 1;
 	following.count = 2;
 	uint64_t following_ids[2] = {666, 69};
-	memcpy(following.user_ids, following_ids, 2);
+	following.user_ids = following_ids;
 	cb.following = &following;
 	
 	/* test insert_user */
@@ -48,6 +48,13 @@ int main(int argc, char *argv[])
 	insert_user(&cb);
 	printf("searching for user %s\n", cb.username);
 	search_user_by_name("cboswell", INSTA_FOLLOWER);
+	printf("search for user with id %d\n", 12345);
+	search_user_by_id(12345, INSTA_FOLLOWER);
+	printf("delete user with id %d\n", 12345);
+	delete_user(12345);
+	printf("search for user with id %d, should show nothing there\n", 12345);
+  search_user_by_id(12345, INSTA_FOLLOWER);
+
 	return 0;
 }
 
