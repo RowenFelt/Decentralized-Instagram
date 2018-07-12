@@ -22,7 +22,7 @@
 int
 mongo_user_connect(struct mongo_user_connection *cn, char *db_name, char *coll_name)
 {
-  /*  Required to initialize libmongoc's internals */
+	/*  Required to initialize libmongoc's internals */
   mongoc_init ();
 
   /* Safely create a MongoDB URI object from the given string */
