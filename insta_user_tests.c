@@ -48,7 +48,13 @@ int main(int argc, char *argv[])
 	insert_user(&cb);
 	printf("searching for user %s\n", cb.username);
 	search_user_by_name("cboswell", INSTA_FOLLOWER);
-	// printf("No segfault 6\n");
+	printf("search for user with id %d\n", 12345);
+	search_user_by_id(12345, INSTA_FOLLOWER);
+	printf("delete user with id %d\n", 12345);
+	delete_user(12345);
+	printf("search for user with id %d, should show nothing there\n", 12345);
+  search_user_by_id(12345, INSTA_FOLLOWER);
+
 	return 0;
 }
 

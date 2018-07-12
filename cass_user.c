@@ -46,7 +46,7 @@ int keyspace_table_init(char *keyspace, char *table){
   cass_statement_free(create_keyspace);
 
   // error check
-  if(init_error(statement_future)){
+  if(!init_error(statement_future)){
     printf("Create keyspace result: %s\n", cass_error_desc(connection.err_code));
   }
 
@@ -60,7 +60,7 @@ int keyspace_table_init(char *keyspace, char *table){
   // free table statement
   cass_statement_free(create_table);
   // error check
-  if(init_error(statement_future)){
+  if(!init_error(statement_future)){
     printf("Create table result: %s\n", cass_error_desc(connection.err_code));
   }
 
@@ -95,7 +95,9 @@ int add_user(uint64_t user_id, char *username, char *ip){
   connection.err_code = cass_future_error_code(insert_future); //blocks till return
 
 
-  printf("Insertion status: %s\n", cass_error_desc(connection.err_code));
+  if(connection.err_code != CASS_OK){
+		printf("Insertion status: %s\n", cass_error_desc(connection.err_code));
+	}
 
   /* CLEANUP OF CASSANDRA VARS */
   cass_statement_free(add_user_statement);
@@ -166,7 +168,7 @@ int get_user_ip_by_username(char *keyspace, char *table, char *username){
 
 		cass_inet_string(ip, ip_string);
 
-	  printf("%s's ip address is: %s\n", query_target, ip_string);	
+	  printf("username:%s ip address: %s\n", query_target, ip_string);	
 	}
 	cass_iterator_free(iterator);
 
@@ -222,7 +224,7 @@ int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
     printf("user query result is NULL, exiting...\n");
 		exit(2);
   }
-	
+
 	//count the number of results
 	result = cass_result_row_count(user_query_result);
 
@@ -239,7 +241,7 @@ int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
 
 		cass_inet_string(ip, ip_string);
 
-	  printf("%s's ip address is: %s\n", query_target, ip_string);	
+	  printf("user_id:%s ip address: %s\n", query_target, ip_string);	
 	}
 	cass_iterator_free(iterator);
 
@@ -270,11 +272,8 @@ static int session_connection(struct cass_connect *connection){
 
   connection->err_code = cass_cluster_set_contact_points(connection->cluster," 127.0.0.1");
 
-  if(connection->err_code == CASS_OK){
-    printf("Contact poins set successfully.\n");
-  }
-  else{
-    printf("%s\n", cass_error_desc(connection->err_code));
+  if(!(connection->err_code == CASS_OK)){
+    printf("contact point error: %s\n", cass_error_desc(connection->err_code));
   }
 
   // connect to the cluster and wait until the futer variable returns, then 

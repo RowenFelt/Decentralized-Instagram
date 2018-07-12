@@ -62,16 +62,12 @@ search_user_by_name(char *username, int flags)
       printf ("%s\n", str);
       bson_free (str);
 		}
-		printf("No segfault 1\n");
 		if (mongoc_cursor_error (cursor, &error)) {
       fprintf (stderr, "An error occurred: %s\n", error.message);
 		}
-		printf("No segfault 2\n");
 		mongoc_cursor_destroy (cursor);
 		bson_destroy (query);
-		printf("No segfault 3\n");
 		n = mongo_user_teardown(&cn);
-		printf("No segfault 4\n");
 		if(result == 0){
 			return n;
 		}
@@ -79,15 +75,50 @@ search_user_by_name(char *username, int flags)
 	else if(flags == INSTA_UNKNOWN){
 		get_user_ip_by_username(INSTA_DB, CASS_TABLE, username);	
 	}
-	printf("No segfault 5\n");
 	return result;
 }
 
 
 int 
-search_user_by_id(uint64_t user_id)
+search_user_by_id(uint64_t user_id, int flags)
 {
-	return 0;
+	  /* search for a user in the mongoDB list of followers followees or the Cassandra
+   * database of users using the respective flags INSTA_FOLLOWER, INSTA_FOLLOWEE,
+   * INSTA_UNKNOWN. Return number of results found or -1 on failure */
+  struct mongo_user_connection cn;
+  mongoc_cursor_t *cursor;
+  bson_t *query;
+  const bson_t *doc;
+  bson_error_t error;
+  char *str; 
+  int result = 0;
+  int n;
+
+  if(flags == INSTA_FOLLOWER || flags == INSTA_FOLLOWEE) {
+    cn.uri_string = "mongodb://localhost:27017";
+    mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
+    query = BCON_NEW ("user_id", BCON_INT64(user_id));
+    cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
+    while (mongoc_cursor_next (cursor, &doc)) {
+      result+=1;
+      str = bson_as_canonical_extended_json (doc, NULL);
+      printf ("%s\n", str);
+      bson_free (str);
+    }
+    if (mongoc_cursor_error (cursor, &error)) {
+      fprintf (stderr, "An error occurred: %s\n", error.message);
+    }
+    mongoc_cursor_destroy (cursor);
+    bson_destroy (query);
+    n = mongo_user_teardown(&cn);
+    if(result == 0){
+      return n;
+    }
+  }
+  else if(flags == INSTA_UNKNOWN){
+    get_user_ip_by_id(INSTA_DB, CASS_TABLE, user_id);
+  }
+  return result;
 }
 
 
@@ -103,7 +134,8 @@ insert_user(struct user *new_user)
 	bson_t subchild_followers;
 	bson_t subchild_following;
 	char buf[10];
-
+	int n;
+	
 	cn.uri_string = "mongodb://localhost:27017";
 
 	if(new_user == NULL){
@@ -112,6 +144,13 @@ insert_user(struct user *new_user)
 	if((error = mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
 		return error;
 	}
+
+	/* return -1 if user is already in table, this behavior might be revised */
+	if((n = search_user_by_id(new_user->user_id, INSTA_FOLLOWER)) > 0) {
+		printf("user with user_id %ld already exists in table\n", new_user->user_id);
+		return -1;
+	}
+	
 	
 	doc = bson_new ();
 	BSON_APPEND_INT64(doc, "user_id", new_user->user_id);
@@ -164,7 +203,32 @@ insert_user(struct user *new_user)
 int
 delete_user(uint64_t user_id)
 {
-	return 0;
+	struct mongo_user_connection cn;
+  bson_t *selector;
+  bson_t reply;
+	bson_error_t error;
+	bson_iter_t iterator;
+  int n;
+  
+	cn.uri_string = "mongodb://localhost:27017";
+  mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
+  selector = BCON_NEW ("user_id", BCON_INT64(user_id));
+  n = mongoc_collection_delete_one(cn.collection, selector, NULL, &reply, &error);
+  if(!n){
+		fprintf (stderr, "An error occurred: %s\n", error.message);
+		return error.code;
+	}
+	else{
+		printf("user_id %ld deleted\n", user_id);
+	}
+	bson_iter_init(&iterator, &reply); 
+	if(bson_iter_find(&iterator, "deletedCount")){
+		n = bson_iter_int32(&iterator);
+	}
+	bson_destroy (selector);
+	bson_destroy (&reply);
+	mongo_user_teardown(&cn);
+  return n;
 }
 
 int 
