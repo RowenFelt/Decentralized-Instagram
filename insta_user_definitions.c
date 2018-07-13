@@ -25,6 +25,8 @@
 #define USER_COLLECTION "users"
 #define CASS_TABLE "user"
 
+static int parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type);
+
 int 
 init_user(void)
 {
@@ -263,16 +265,12 @@ parse_user_bson(struct user *user, const bson_t *doc)
 	/* populates the user struct with the fields from the bson_t doc */
 	bson_iter_t iter;
 	bson_iter_t iter_bio;
-	bson_iter_t iter_followers;
-	bson_iter_t iter_following;
 	const char *username;
 	const char *image_path;		
 	const char *name;
 	struct personal_data *bio;
 	struct insta_relations *followers;
 	struct insta_relations *following;
-	uint32_t bson_array_len;
-	const uint8_t *bson_array;
 
 	bio = malloc(sizeof(struct personal_data));
 	followers = malloc(sizeof(struct insta_relations));
@@ -316,51 +314,53 @@ parse_user_bson(struct user *user, const bson_t *doc)
 	if(bson_iter_find(&iter, "fragmentation")){
 		user->fragmentation = bson_iter_int32(&iter);
 	}
-	if(bson_iter_find_descendant(&iter, "followers.direction", &iter_followers)){
-    followers->direction = bson_iter_int32(&iter_followers);
-  }	
-	if(bson_iter_next(&iter_followers)){
-	  followers->count = bson_iter_int32(&iter_followers);
-  }
-	if(bson_iter_next(&iter_followers) && BSON_ITER_HOLDS_ARRAY(&iter_followers)){
-		bson_iter_array(&iter_followers, &bson_array_len, &bson_array);
-		bson_t *followers_array = bson_new_from_data(bson_array, bson_array_len);
-		bson_iter_init(&iter_followers, followers_array);
-		int i=0;	
-		followers->user_ids = malloc(sizeof(uint64_t) * followers->count);
-		if(followers->user_ids == NULL){
-		  perror("malloc");
-      return -1;
-    }
-		while(bson_iter_next(&iter_followers) && i < followers->count){
-			followers->user_ids[i] = bson_iter_int64(&iter_followers);
-			i+=1;
-		}
-	}
+	parse_insta_relations(&iter, followers, "followers");
 	user->followers = followers;
-	
-	if(bson_iter_find_descendant(&iter, "following.direction", &iter_following)){
-    following->direction = bson_iter_int32(&iter_following);
+	parse_insta_relations(&iter, following, "following");
+  user->following = following;
+	return 0;
+}
+
+static int 
+parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type)
+{
+	/* parses the insta_relations sub document from a bson user object */
+	bson_iter_t iter_relation;
+	uint32_t bson_array_len;
+  const uint8_t *bson_array;
+	char subtype[11];
+	char new_type[30];
+		
+	memset(new_type, '\0', 30);
+	/* check insta_relations type */
+	if(!((memcmp(type, "followers", 9) == 0)
+		|| (memcmp(type, "following", 9) == 0))){
+		return -1;
+	}
+	strcpy(subtype, ".direction");
+	strcat(new_type, type);
+	strcat(new_type, subtype);
+	if(bson_iter_find_descendant(iter, new_type, &iter_relation)){
+    friends->direction = bson_iter_int32(&iter_relation);
   }
-  if(bson_iter_next(&iter_following)){
-    following->count = bson_iter_int32(&iter_following);
+  if(bson_iter_next(&iter_relation)){
+    friends->count = bson_iter_int32(&iter_relation);
   }
-  if(bson_iter_next(&iter_following) && BSON_ITER_HOLDS_ARRAY(&iter_following)){
-    bson_iter_array(&iter_following, &bson_array_len, &bson_array);
-    bson_t *following_array = bson_new_from_data(bson_array, bson_array_len);
-    bson_iter_init(&iter_following, following_array);
+  if(bson_iter_next(&iter_relation) && BSON_ITER_HOLDS_ARRAY(&iter_relation)){
+    bson_iter_array(&iter_relation, &bson_array_len, &bson_array);
+    bson_t *relation_array = bson_new_from_data(bson_array, bson_array_len);
+    bson_iter_init(&iter_relation, relation_array);
     int i=0;
-    following->user_ids = malloc(sizeof(uint64_t) * following->count);
-    if(following->user_ids == NULL){
+    friends->user_ids = malloc(sizeof(uint64_t) * friends->count);
+    if(friends->user_ids == NULL){
       perror("malloc");
       return -1;
     }
-    while(bson_iter_next(&iter_following) && i < following->count){
-      following->user_ids[i] = bson_iter_int64(&iter_following);
-			i+=1;
-		}
+    while(bson_iter_next(&iter_relation) && i < friends->count){
+      friends->user_ids[i] = bson_iter_int64(&iter_relation);
+      i+=1;
+    }
   }
-  user->following = following;
 	return 0;
 }
 
