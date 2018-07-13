@@ -25,6 +25,8 @@
 #define USER_COLLECTION "users"
 #define CASS_TABLE "user"
 
+static int parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type);
+
 int 
 init_user(void)
 {
@@ -90,7 +92,6 @@ search_user_by_id(uint64_t user_id, int flags)
   bson_t *query;
   const bson_t *doc;
   bson_error_t error;
-  char *str; 
   int result = 0;
   int n;
 
@@ -101,9 +102,10 @@ search_user_by_id(uint64_t user_id, int flags)
     cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
     while (mongoc_cursor_next (cursor, &doc)) {
       result+=1;
-      str = bson_as_canonical_extended_json (doc, NULL);
-      printf ("%s\n", str);
-      bson_free (str);
+      struct user usr;
+			parse_user_bson(&usr, doc); //eventually do it this way 
+			print_user_struct(&usr);
+			user_heap_cleanup(&usr); //this should be moved
     }
     if (mongoc_cursor_error (cursor, &error)) {
       fprintf (stderr, "An error occurred: %s\n", error.message);
@@ -135,7 +137,10 @@ insert_user(struct user *new_user)
 	bson_t subchild_following;
 	char buf[10];
 	int n;
+	time_t creation;
+	// char *c_time_string;	
 	
+
 	cn.uri_string = "mongodb://localhost:27017";
 
 	if(new_user == NULL){
@@ -150,27 +155,40 @@ insert_user(struct user *new_user)
 		printf("user with user_id %ld already exists in table\n", new_user->user_id);
 		return -1;
 	}
-	
-	
+		
+	/* Obtain timestamp */
+  creation = time(NULL);
+
+  if (creation == ((time_t)-1)){
+		(void) fprintf(stderr, "Failure to obtain the current time.\n");
+		exit(EXIT_FAILURE);
+	}
+
+  /* Convert to local time format. */
+ 
+	char *c_time_string = ctime(&creation);
+	printf("Current time is %s", c_time_string);
+	printf("finished time stuff\n");
 	doc = bson_new ();
 	BSON_APPEND_INT64(doc, "user_id", new_user->user_id);
 	BSON_APPEND_UTF8(doc, "username", new_user->username);
 	BSON_APPEND_UTF8(doc, "image_path", new_user->image_path); // TODO: change to binary?
 	BSON_APPEND_DOCUMENT_BEGIN(doc, "bio", &child);
 	BSON_APPEND_UTF8(&child, "name", new_user->bio->name);
-	BSON_APPEND_UTF8(&child, "birthdate", new_user->bio->birthdate); // TODO: change to time_t
+	BSON_APPEND_TIME_T(&child, "date_created", creation);
+	BSON_APPEND_TIME_T(&child, "date_modified", creation);
 	bson_append_document_end(doc, &child);	
 	BSON_APPEND_INT32(doc, "fragmentation", new_user->fragmentation);
 	BSON_APPEND_DOCUMENT_BEGIN(doc, "followers", &child);
 	BSON_APPEND_INT32(&child, "direction", new_user->followers->direction);
 	BSON_APPEND_INT32(&child, "count", new_user->followers->count);
 	BSON_APPEND_ARRAY_BEGIN (&child, "user_ids", &subchild_followers);
-  for (int i = 0; i < new_user->followers->count; ++i) {
+	for (int i = 0; i < new_user->followers->count; ++i) {
 		memset(buf, '\0', 10);
 		sprintf(buf, "%d", i);
 		BSON_APPEND_INT64(&subchild_followers, buf, new_user->followers->user_ids[i]);
-  }
-  bson_append_array_end (&child, &subchild_followers);
+	}
+	bson_append_array_end (&child, &subchild_followers);
 	bson_append_document_end(doc, &child);
 	BSON_APPEND_DOCUMENT_BEGIN(doc, "following", &second_child); 
   BSON_APPEND_INT32(&second_child, "direction", new_user->following->direction);
@@ -188,7 +206,8 @@ insert_user(struct user *new_user)
 	if (!mongoc_collection_insert_one (cn.collection, doc, NULL, NULL, &cn.error)) {
 		fprintf (stderr, "%s\n", cn.error.message);
   }
-	
+
+	printf("insert successful\n");	
 	bson_destroy (doc);
 	bson_destroy (&child);
   bson_destroy (&second_child);
@@ -203,6 +222,7 @@ insert_user(struct user *new_user)
 int
 delete_user(uint64_t user_id)
 {
+	/* deletes a user from mongoDB with a given user_id */
 	struct mongo_user_connection cn;
   bson_t *selector;
   bson_t reply;
@@ -234,5 +254,159 @@ delete_user(uint64_t user_id)
 int 
 pull_user_profile(uint64_t user_id)
 {
+	/* dependent on the protocols we define for peer to peer connections */
 	return 0;
 }
+
+
+int 
+parse_user_bson(struct user *user, const bson_t *doc)
+{
+	/* populates the user struct with the fields from the bson_t doc */
+	bson_iter_t iter;
+	bson_iter_t iter_bio;
+	const char *username;
+	const char *image_path;		
+	const char *name;
+	struct personal_data *bio;
+	struct insta_relations *followers;
+	struct insta_relations *following;
+
+	bio = malloc(sizeof(struct personal_data));
+	followers = malloc(sizeof(struct insta_relations));
+	following = malloc(sizeof(struct insta_relations));
+	if(bio == NULL || followers == NULL ||
+			following == NULL){
+		perror("malloc");
+		return -1;
+	}
+
+	bson_iter_init(&iter, doc);
+	if(bson_iter_find(&iter, "user_id")){
+		user->user_id = bson_iter_int64(&iter);
+	}
+	if(bson_iter_find(&iter, "username")){
+		username = bson_iter_utf8(&iter, NULL);
+		user->username = strdup(username);
+	}
+	if(bson_iter_find(&iter, "image_path")){
+		image_path = bson_iter_utf8(&iter, NULL);
+		user->image_path = strdup(image_path);
+	}
+	
+	if(bson_iter_find_descendant(&iter, "bio.name", &iter_bio)){
+		name = bson_iter_utf8(&iter_bio, NULL);
+		bio->name = malloc(sizeof(char) * strlen(name)+1);
+		if(bio->name == NULL){
+			perror("malloc");
+			return -1;
+		}
+		memcpy(bio->name, name, strlen(name)+1);
+	}
+	if(bson_iter_next(&iter_bio)){
+    bio->date_created = bson_iter_time_t(&iter_bio);
+		
+	}
+	if(bson_iter_next(&iter_bio)){
+    bio->date_modified = bson_iter_time_t(&iter_bio);
+	}
+	user->bio = bio;
+	if(bson_iter_find(&iter, "fragmentation")){
+		user->fragmentation = bson_iter_int32(&iter);
+	}
+	parse_insta_relations(&iter, followers, "followers");
+	user->followers = followers;
+	parse_insta_relations(&iter, following, "following");
+  user->following = following;
+	return 0;
+}
+
+static int 
+parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type)
+{
+	/* parses the insta_relations sub document from a bson user object */
+	bson_iter_t iter_relation;
+	uint32_t bson_array_len;
+  const uint8_t *bson_array;
+	char subtype[11];
+	char new_type[30];
+		
+	memset(new_type, '\0', 30);
+	/* check insta_relations type */
+	if(!((memcmp(type, "followers", 9) == 0)
+		|| (memcmp(type, "following", 9) == 0))){
+		return -1;
+	}
+	strcpy(subtype, ".direction");
+	strcat(new_type, type);
+	strcat(new_type, subtype);
+	if(bson_iter_find_descendant(iter, new_type, &iter_relation)){
+    friends->direction = bson_iter_int32(&iter_relation);
+  }
+  if(bson_iter_next(&iter_relation)){
+    friends->count = bson_iter_int32(&iter_relation);
+  }
+  if(bson_iter_next(&iter_relation) && BSON_ITER_HOLDS_ARRAY(&iter_relation)){
+    bson_iter_array(&iter_relation, &bson_array_len, &bson_array);
+    bson_t *relation_array = bson_new_from_data(bson_array, bson_array_len);
+    bson_iter_init(&iter_relation, relation_array);
+    int i=0;
+    friends->user_ids = malloc(sizeof(uint64_t) * friends->count);
+    if(friends->user_ids == NULL){
+      perror("malloc");
+      return -1;
+    }
+    while(bson_iter_next(&iter_relation) && i < friends->count){
+      friends->user_ids[i] = bson_iter_int64(&iter_relation);
+      i+=1;
+    }
+  }
+	return 0;
+}
+
+
+void
+user_heap_cleanup(struct user *user)
+{
+	/* cleans up heap variables */
+	free(user->bio->name);
+	free(user->bio);	
+	free(user->followers->user_ids);
+	free(user->followers);
+	free(user->following->user_ids);
+	free(user->following);	
+}
+
+
+void
+print_user_struct(struct user *user)
+{
+	char *c_time_string;
+  
+	printf("    user_id: %ld\n", user->user_id);
+	printf("    username: %s\n", user->username);
+	printf("    image_path: %s\n", user->image_path);
+	printf("    bio.name: %s\n", user->bio->name);
+	c_time_string = ctime(&user->bio->date_created);
+	printf("    bio.date_created: %s", c_time_string);
+	c_time_string = ctime(&user->bio->date_modified);
+	printf("    bio.date_modified: %s", c_time_string);
+	printf("    fragmentation: %d\n", user->fragmentation);
+	printf("    followers.direction: %d\n", user->followers->direction);
+	printf("    followers.count: %d\n", user->followers->count);
+	for(int i=0; i<user->followers->count; i++){
+		printf("    follower[%d].user_id: %ld\n", i, user->followers->user_ids[i]);
+	}
+	printf("    following.direction: %d\n", user->following->direction);
+  printf("    following.count: %d\n", user->following->count);
+  for(int i=0; i<user->following->count; i++){
+    printf("    following[%d].user_id: %ld\n", i, user->following->user_ids[i]);
+  }
+}
+
+
+
+
+
+
+

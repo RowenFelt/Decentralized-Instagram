@@ -7,6 +7,7 @@
 #ifndef _INSTA_USER_DEFINITIONS
 #define _INSTA_USER_DEFINITIONS
 
+#include <bson.h>
 #include <stdint.h>
 
 #define INSTA_FOLLOWER 0x01
@@ -31,7 +32,8 @@ struct insta_relations {
 
 struct personal_data {
   char *name;
-	char *birthdate;
+	time_t date_created;
+	time_t date_modified;
 };
 
 int init_user(void);
@@ -40,5 +42,8 @@ int search_user_by_id(uint64_t user_id, int flags);
 int insert_user(struct user *new_user);
 int delete_user(uint64_t user_id);
 int pull_user_profile(uint64_t user_id);
+int parse_user_bson(struct user *user, const bson_t *doc);
+void user_heap_cleanup(struct user *user);
+void print_user_struct(struct user *user);
 
 #endif /* _INSTA_USER_DEFINITIONS */

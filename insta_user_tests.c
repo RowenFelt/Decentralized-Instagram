@@ -5,6 +5,7 @@
  */
 
 #include <stdlib.h>
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include "insta_user_definitions.h"
@@ -29,7 +30,6 @@ int main(int argc, char *argv[])
 	cb.username = "cboswell";
 	cb.image_path = "/images/cboswell_image/fake_path";
 	pd.name = "Campbell Boswell";
-	pd.birthdate = "21 years ago";
 	cb.bio = &pd;
 	cb.fragmentation = 0;
 	followers.direction = 0;
