@@ -18,17 +18,17 @@ static int session_connection(struct cass_connect* connection);
 static int tear_down_connection(struct cass_connect* connection);
 
 int keyspace_table_init(char *keyspace, char *table){
-	// Defining the columns (fields) of the table and their associated types
-  char *primary_field = "user_id"; // The name of the primary field in a row 
-  char *primary_type = "bigint";  // The CQL type (e.g. text, int) of said field
-  char *field_1 = "username"; // The name of the primary field in a row 
-  char *type_1 = "text";  // The CQL type (e.g. text, int) of said field 
+	/* Defining the columns (fields) of the table and their associated types */
+  char *primary_field = "user_id"; 
+  char *primary_type = "bigint"; 
+  char *field_1 = "username"; 
+  char *type_1 = "text"; 
 	char *field_2 = "ip_addr";
   char *type_2 = "inet";
 	struct cass_connect connection;
   CassStatement *create_keyspace;
   CassStatement *create_table;
-  CassFuture *statement_future; // will be used to track execution status 
+  CassFuture *statement_future; 
 	char create_keyspace_query[1024];
 	char create_table_query[1024];
 
@@ -47,8 +47,9 @@ int keyspace_table_init(char *keyspace, char *table){
 
   // error check
   if(!init_error(statement_future)){
-    printf("Create keyspace result: %s\n", cass_error_desc(connection.err_code));
-  }
+		printf("Create keyspace result: %s\n", cass_error_desc(connection.err_code));
+		return connection.err_code;
+	 }
 
   /* Create table */
 	sprintf(create_table_query, "CREATE TABLE %s.%s(%s %s, %s %s, %s %s, \
@@ -71,6 +72,7 @@ int keyspace_table_init(char *keyspace, char *table){
 
 
 int add_user(uint64_t user_id, char *username, char *ip){
+	/* inserts a new user into the insta.user table */
 	CassStatement *add_user_statement;
 	CassFuture *insert_future;
 	CassInet ip_inet;
@@ -78,30 +80,25 @@ int add_user(uint64_t user_id, char *username, char *ip){
 
 	session_connection(&connection);
 
-  /* INSERTING THE NEW USER */
-  //cassandra statement variable
   add_user_statement= cass_statement_new("INSERT INTO insta.user (user_id, username, ip_addr) VALUES ( ?, ?, ?)", 3);
 
-  //binding command line args (user_name and ip) to the INSERT statement from above
 	cass_statement_bind_int64(add_user_statement, 0, (int64_t) user_id);
 	cass_inet_from_string(ip, &ip_inet);
 	cass_statement_bind_string(add_user_statement, 1, username);
 	cass_statement_bind_inet(add_user_statement, 2, ip_inet);
 
-  //it looks like we can use the CassFuture return type to do some error checking
-  // -- worth reading throught that section of the api for more details and 
-  //    finding out how to interperate the status of a variable of type CassFuture 
   insert_future = cass_session_execute(connection.session, add_user_statement);
-  connection.err_code = cass_future_error_code(insert_future); //blocks till return
+  connection.err_code = cass_future_error_code(insert_future);
 
 
   if(connection.err_code != CASS_OK){
 		printf("Insertion status: %s\n", cass_error_desc(connection.err_code));
+		return (int) connection.err_code;
 	}
 
   /* CLEANUP OF CASSANDRA VARS */
   cass_statement_free(add_user_statement);
-  cass_future_free(insert_future); // Free the future from our insert command
+  cass_future_free(insert_future);
 	tear_down_connection(&connection);
 	return 0;
 }
@@ -128,35 +125,36 @@ int get_user_ip_by_username(char *keyspace, char *table, char *username){
 	session_connection(&connection);
 
   /* BUILD AND EXECUTE USER QUERY */
-  return_column = "ip_addr"; //The name of the column we want returned
-	query_column = "username"; //The name of the column we are querying(primary column) 
+  return_column = "ip_addr";
+	query_column = "username"; 
   query_target = username;
 
   /* construct the query statement */
   sprintf(get_user_query, "SELECT %s FROM %s.%s WHERE %s='%s' ALLOW FILTERING",
       return_column, keyspace, table, query_column, query_target);
 
-  //craft query statement - returns CassStatement 
   get_user = cass_statement_new(get_user_query, 0);
 
-  //execute statement - returns CassFuture
   statement_future = cass_session_execute(connection.session, get_user);
-  cass_statement_free(get_user); //Free statement
+  cass_statement_free(get_user);
 	if((connection.err_code = cass_future_error_code(statement_future)) !=  CASS_OK){
     printf("Statement result: %s\n", cass_error_desc(connection.err_code));
-  }
+		return connection.err_code;
+	}
 
-  //get results from future - returns CassResult
   user_query_result = cass_future_get_result(statement_future);
-  cass_future_free(statement_future); //Free future
+  cass_future_free(statement_future);
 
   if(user_query_result == NULL){
     exit(2);
   }
 	
-	//count the number of results
 	result = cass_result_row_count(user_query_result);
-
+	
+	if(result == 0){
+		printf("no results found for username: %s\n", username);
+		return 0;
+	}
 	CassIterator *iterator = cass_iterator_from_result(user_query_result);
 	while(cass_iterator_next(iterator)) {
 		const CassRow *row = cass_iterator_get_row(iterator);
@@ -214,7 +212,8 @@ int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
   cass_statement_free(get_user); //Free statement
 	if((connection.err_code = cass_future_error_code(statement_future)) !=  CASS_OK){
     printf("Statement result: %s\n", cass_error_desc(connection.err_code));
-  }
+		return connection.err_code;
+	}
 
   //get results from future - returns CassResult
   user_query_result = cass_future_get_result(statement_future);
@@ -266,7 +265,9 @@ static int init_error(CassFuture *statement_future){
 
 
 static int session_connection(struct cass_connect *connection){
-	/* Initiates the Cassandra connection. Returns 0 on success, error code on failure */
+	/* Initiates the Cassandra connection. Returns 0 on success, 
+   * error code on failure. cass_future_error_code blocks until
+   * cass_session_connect has returned */
   connection->cluster = cass_cluster_new();
   connection->session = cass_session_new();
 
@@ -276,12 +277,9 @@ static int session_connection(struct cass_connect *connection){
     printf("contact point error: %s\n", cass_error_desc(connection->err_code));
   }
 
-  // connect to the cluster and wait until the futer variable returns, then 
-  // error check it
   connection->connect_future = cass_session_connect(connection->session, connection->cluster);
-  connection->err_code = cass_future_error_code(connection->connect_future); //blocks
+  connection->err_code = cass_future_error_code(connection->connect_future); 
 
-  //prints a string description of the error code
   if(!init_error(connection->connect_future)){
 		printf("Connection status: %s\n", cass_error_desc(connection->err_code));
 		return connection->err_code;
@@ -292,8 +290,8 @@ static int session_connection(struct cass_connect *connection){
 
 static int tear_down_connection(struct cass_connect *connection){
 	/* frees all connection pointers */
-	cass_future_free(connection->connect_future);  // Free the future from our connect command
-	cass_session_free(connection->session); // Free the session
-  cass_cluster_free(connection->cluster); //Free the cluster
+	cass_future_free(connection->connect_future); 
+	cass_session_free(connection->session);
+  cass_cluster_free(connection->cluster); 
 	return 0;
 }

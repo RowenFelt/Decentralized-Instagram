@@ -36,15 +36,15 @@ init_user(void)
 int 
 search_user_by_name(char *username, int flags)
 {
-	/* search for a user in the mongoDB list of followers followees or the Cassandra
-	 * database of users using the respective flags INSTA_FOLLOWER, INSTA_FOLLOWEE,
-	 * INSTA_UNKNOWN. Return number of results found or -1 on failure */ 
+	/* search for a user in the mongoDB list of followers
+   *  followees or the Cassandra database of users using 
+   *  the respective flags INSTA_FOLLOWER, INSTA_FOLLOWEE,
+   *  INSTA_UNKNOWN. Return number of results found or -1 on failure */ 
 	struct mongo_user_connection cn;
 	mongoc_cursor_t *cursor;
 	bson_t *query;
 	const bson_t *doc;
 	bson_error_t error;
-	char *str;
 	int result = 0;
 	int n;
 
@@ -54,15 +54,16 @@ search_user_by_name(char *username, int flags)
 		query = BCON_NEW (
 			"$or", "[",
 			"{", "username", BCON_UTF8(username), "}",
-			"{", "name", BCON_UTF8(username), "}",
+			"{", "bio.name", BCON_UTF8(username), "}",
 			"]"	
 		);
 		cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
 		while (mongoc_cursor_next (cursor, &doc)) {
       result+=1;
-			str = bson_as_canonical_extended_json (doc, NULL);
-      printf ("%s\n", str);
-      bson_free (str);
+			struct user usr;
+      parse_user_bson(&usr, doc); 
+      print_user_struct(&usr);
+      user_heap_cleanup(&usr);
 		}
 		if (mongoc_cursor_error (cursor, &error)) {
       fprintf (stderr, "An error occurred: %s\n", error.message);
@@ -84,9 +85,11 @@ search_user_by_name(char *username, int flags)
 int 
 search_user_by_id(uint64_t user_id, int flags)
 {
-	  /* search for a user in the mongoDB list of followers followees or the Cassandra
-   * database of users using the respective flags INSTA_FOLLOWER, INSTA_FOLLOWEE,
-   * INSTA_UNKNOWN. Return number of results found or -1 on failure */
+	/* search for a user in the mongoDB list of 
+   * followers followees or the Cassandra database
+   *  of users using the respective flags 
+   *  INSTA_FOLLOWER, INSTA_FOLLOWEE, INSTA_UNKNOWN. 
+   *  Return number of results found or -1 on failure */
   struct mongo_user_connection cn;
   mongoc_cursor_t *cursor;
   bson_t *query;
@@ -103,9 +106,9 @@ search_user_by_id(uint64_t user_id, int flags)
     while (mongoc_cursor_next (cursor, &doc)) {
       result+=1;
       struct user usr;
-			parse_user_bson(&usr, doc); //eventually do it this way 
+			parse_user_bson(&usr, doc); 
 			print_user_struct(&usr);
-			user_heap_cleanup(&usr); //this should be moved
+			user_heap_cleanup(&usr);
     }
     if (mongoc_cursor_error (cursor, &error)) {
       fprintf (stderr, "An error occurred: %s\n", error.message);
@@ -138,8 +141,6 @@ insert_user(struct user *new_user)
 	char buf[10];
 	int n;
 	time_t creation;
-	// char *c_time_string;	
-	
 
 	cn.uri_string = "mongodb://localhost:27017";
 
@@ -150,7 +151,6 @@ insert_user(struct user *new_user)
 		return error;
 	}
 
-	/* return -1 if user is already in table, this behavior might be revised */
 	if((n = search_user_by_id(new_user->user_id, INSTA_FOLLOWER)) > 0) {
 		printf("user with user_id %ld already exists in table\n", new_user->user_id);
 		return -1;
@@ -163,16 +163,11 @@ insert_user(struct user *new_user)
 		(void) fprintf(stderr, "Failure to obtain the current time.\n");
 		exit(EXIT_FAILURE);
 	}
-
-  /* Convert to local time format. */
  
-	char *c_time_string = ctime(&creation);
-	printf("Current time is %s", c_time_string);
-	printf("finished time stuff\n");
 	doc = bson_new ();
 	BSON_APPEND_INT64(doc, "user_id", new_user->user_id);
 	BSON_APPEND_UTF8(doc, "username", new_user->username);
-	BSON_APPEND_UTF8(doc, "image_path", new_user->image_path); // TODO: change to binary?
+	BSON_APPEND_UTF8(doc, "image_path", new_user->image_path);
 	BSON_APPEND_DOCUMENT_BEGIN(doc, "bio", &child);
 	BSON_APPEND_UTF8(&child, "name", new_user->bio->name);
 	BSON_APPEND_TIME_T(&child, "date_created", creation);
