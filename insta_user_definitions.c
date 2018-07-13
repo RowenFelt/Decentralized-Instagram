@@ -90,7 +90,6 @@ search_user_by_id(uint64_t user_id, int flags)
   bson_t *query;
   const bson_t *doc;
   bson_error_t error;
-  char *str; 
   int result = 0;
   int n;
 
@@ -101,11 +100,9 @@ search_user_by_id(uint64_t user_id, int flags)
     cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
     while (mongoc_cursor_next (cursor, &doc)) {
       result+=1;
-      str = bson_as_canonical_extended_json (doc, NULL);
       struct user usr;
 			parse_user_bson(&usr, doc); //eventually do it this way 
-			// printf ("%s\n", str); //comment out results for now
-      bson_free (str);
+			print_user_struct(&usr);
 			user_heap_cleanup(&usr); //this should be moved
     }
     if (mongoc_cursor_error (cursor, &error)) {
@@ -166,8 +163,9 @@ insert_user(struct user *new_user)
 	}
 
   /* Convert to local time format. */
-  // c_time_string = ctime(&creation);
-	// printf("Current time is %s", c_time_string);
+ 
+	char *c_time_string = ctime(&creation);
+	printf("Current time is %s", c_time_string);
 	printf("finished time stuff\n");
 	doc = bson_new ();
 	BSON_APPEND_INT64(doc, "user_id", new_user->user_id);
@@ -175,8 +173,8 @@ insert_user(struct user *new_user)
 	BSON_APPEND_UTF8(doc, "image_path", new_user->image_path); // TODO: change to binary?
 	BSON_APPEND_DOCUMENT_BEGIN(doc, "bio", &child);
 	BSON_APPEND_UTF8(&child, "name", new_user->bio->name);
-	BSON_APPEND_DATE_TIME(&child, "date_created", creation);
-	BSON_APPEND_DATE_TIME(&child, "date_modified", creation);
+	BSON_APPEND_TIME_T(&child, "date_created", creation);
+	BSON_APPEND_TIME_T(&child, "date_modified", creation);
 	bson_append_document_end(doc, &child);	
 	BSON_APPEND_INT32(doc, "fragmentation", new_user->fragmentation);
 	BSON_APPEND_DOCUMENT_BEGIN(doc, "followers", &child);
@@ -336,7 +334,7 @@ parse_user_bson(struct user *user, const bson_t *doc)
     }
 		while(bson_iter_next(&iter_followers) && i < followers->count){
 			followers->user_ids[i] = bson_iter_int64(&iter_followers);
-			printf("followers are %ld\n", followers->user_ids[i]);
+			i+=1;
 		}
 	}
 	user->followers = followers;
@@ -359,11 +357,10 @@ parse_user_bson(struct user *user, const bson_t *doc)
     }
     while(bson_iter_next(&iter_following) && i < following->count){
       following->user_ids[i] = bson_iter_int64(&iter_following);
-      printf("following user are %ld\n", following->user_ids[i]);
-    }
+			i+=1;
+		}
   }
   user->following = following;
-
 	return 0;
 }
 
@@ -376,8 +373,36 @@ user_heap_cleanup(struct user *user)
 	free(user->bio);	
 	free(user->followers->user_ids);
 	free(user->followers);
+	free(user->following->user_ids);
+	free(user->following);	
 }
 
+
+void
+print_user_struct(struct user *user)
+{
+	char *c_time_string;
+  
+	printf("    user_id: %ld\n", user->user_id);
+	printf("    username: %s\n", user->username);
+	printf("    image_path: %s\n", user->image_path);
+	printf("    bio.name: %s\n", user->bio->name);
+	c_time_string = ctime(&user->bio->date_created);
+	printf("    bio.date_created: %s", c_time_string);
+	c_time_string = ctime(&user->bio->date_modified);
+	printf("    bio.date_modified: %s", c_time_string);
+	printf("    fragmentation: %d\n", user->fragmentation);
+	printf("    followers.direction: %d\n", user->followers->direction);
+	printf("    followers.count: %d\n", user->followers->count);
+	for(int i=0; i<user->followers->count; i++){
+		printf("    follower[%d].user_id: %ld\n", i, user->followers->user_ids[i]);
+	}
+	printf("    following.direction: %d\n", user->following->direction);
+  printf("    following.count: %d\n", user->following->count);
+  for(int i=0; i<user->following->count; i++){
+    printf("    following[%d].user_id: %ld\n", i, user->following->user_ids[i]);
+  }
+}
 
 
 

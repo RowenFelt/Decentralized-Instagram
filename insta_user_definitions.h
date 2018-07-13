@@ -44,5 +44,6 @@ int delete_user(uint64_t user_id);
 int pull_user_profile(uint64_t user_id);
 int parse_user_bson(struct user *user, const bson_t *doc);
 void user_heap_cleanup(struct user *user);
+void print_user_struct(struct user *user);
 
 #endif /* _INSTA_USER_DEFINITIONS */
