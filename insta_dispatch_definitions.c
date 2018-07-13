@@ -23,38 +23,23 @@
 #define INSTA_DB "insta"
 #define DISPATCH_COLLECTION "dispatch"
 
-
-/*
- * Takes an instance of a dispatch struct, dis, which contains all the data associated with
- * an dispatch. Formats the information contained in dis in a bson_t document, then inserts
- * said documet in the dispatch collection of the insta database as specified by the 
- * constants at the head of this file.
- */
 int
 insert_dispatch(struct dispatch *dis) {
 
-  bson_t *dispatch;   //The dispatch
-  bson_t child;       //A temp bson_t doc that gets unitialized and cleared when used
+  bson_t *dispatch; 
+  bson_t child;    
 	bson_error_t error;
 
-  char buf[16];       //Buffer to build index 'keys' for an array of user id's
-  const char *key;    //For char* representations of numerical indexes refferenced above 
-  size_t keylen = 0;  //The length of the converted index keys TODO: see if macro implimentation renders this variable unessesary   
-  char* str;          //All-pourpose string used in builing sub docs and arrays 
+  char buf[16];   
+  const char *key;  
+  size_t keylen = 0;    
+  char* str;         
 
-	/*
-   * Initialize a connection to mongo, specify the the database and collection to store
-   * the dispatch bson document in
-   */
   struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
 
   mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 
-  /*
-   * Craft a new BSON document using the fields of a dispatch object, then
-   * insert in to the dispatch collection
-   */
   dispatch = bson_new();
 
   /* Dispatch body comprised of media and text */
@@ -65,11 +50,9 @@ insert_dispatch(struct dispatch *dis) {
 
   BSON_APPEND_INT64(dispatch, "user_id", dis->user_id);
 
- /* Setting a timestamp based on the current time */
  /* TODO: FIX THE TIMESTAMP */
-  time_t rawtime = time(NULL); //time since epoch, this seems to be how time is stored in 
-                               //mongo, and it can be easily formated from this
-  dis->timestamp = rawtime;    //might need to cast or otherwise 'fuzz' to play nice w/ mongo
+  time_t rawtime = time(NULL);
+  dis->timestamp = rawtime;  
   BSON_APPEND_TIME_T(dispatch, "timestamp", dis->timestamp);
 
   BSON_APPEND_INT32(dispatch, "audience_size", dis->audience_size); //who sees dispatch
@@ -84,7 +67,6 @@ insert_dispatch(struct dispatch *dis) {
     bson_append_array_end(dispatch, &child);
   }
 
-	printf("num_tags == %d", dis->num_tags);
   BSON_APPEND_INT32(dispatch, "num_tags", dis->num_tags);
 	
 	/* Insert any hashtags as sub-array */
@@ -119,10 +101,10 @@ insert_dispatch(struct dispatch *dis) {
   BSON_APPEND_INT64(dispatch, "dispatch_id", dis->dispatch_id);
 
   /* Printing the document as a JSON string for error checking */
-  str = bson_as_canonical_extended_json(dispatch, NULL);
+/*  str = bson_as_canonical_extended_json(dispatch, NULL);
   printf("%s\n", str);
   bson_free(str);
-
+*/
 
   if (!mongoc_collection_insert_one (cn.collection, dispatch, NULL, NULL, &error)) {
      fprintf (stderr, "%s\n", error.message);
@@ -133,7 +115,7 @@ insert_dispatch(struct dispatch *dis) {
   return mongo_user_teardown(&cn);
 }
 
-uint64_t 
+int 
 create_dispatch(void)
 {
 	//TODO
@@ -142,38 +124,32 @@ create_dispatch(void)
 	return 0;
 }
 
-uint64_t 
+int 
 delete_dispatch(uint64_t dispatch_id)
 {
 	
-  bson_t *target_dispatch;   //The dispatch
+  bson_t *target_dispatch;  
 	bson_t reply;
 	bson_error_t error;
-	char *str;
+//	char *str; for printing when debugging
 
-	/*
-   * Initialize a connection to mongo, specify the the database and collection to store
-   * the dispatch bson document in
-   */
   struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
 
   mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 
-  /*
-   * Craft a new BSON document using the dispatch_id then query the  dispatch collection
-   */
   target_dispatch = bson_new();
 	BSON_APPEND_INT64(target_dispatch, "dispatch_id", dispatch_id);
 
 	if(!mongoc_collection_delete_one(cn.collection, target_dispatch, NULL, &reply, &error)){
 		fprintf(stderr, "Delete failed: %s\n", error.message);
+		return -1;
 	}
 
-	/* print reply as json for debugging purposes */
+/* printing as json for debugging
 	str = bson_as_canonical_extended_json(&reply, NULL);
 	printf("%s\n", str);
-
+*/
 	bson_destroy(target_dispatch);
 	bson_destroy(&reply);
 	
@@ -182,88 +158,89 @@ delete_dispatch(uint64_t dispatch_id)
 	return 0;
 }
 
-struct dispatch *
+int
 search_dispatch_by_id(uint64_t dispatch_id)
 {
-	struct dispatch *dis;
-  bson_t *target_dispatch;   //Bson doc with target dispatch_id as query key/value
-	const bson_t *result_dispatch;	 //Bson doc to write the query responce to
-  mongoc_cursor_t *cursor;   //Points to the target dispatch after querying
+	struct dispatch dis;
+  bson_t *target_dispatch;  
+	const bson_t *result_dispatch;
+  mongoc_cursor_t *cursor;   
 	char *str;
 
-	/*
-   * Initialize a connection to mongo, specify the the database and collection that
-   * the dispatch bson document is stored in
-   */
-  struct mongo_user_connection cn;
+	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
 
   mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 
-printf("established connection\n");
-
-  /*
-   * Craft a new BSON document using the dispatch_id the query the dispatch collection
-   */
   target_dispatch = bson_new();
 	BSON_APPEND_INT64(target_dispatch, "dispatch_id", dispatch_id);
 
-	/*
-	 * Query using no options of read preferences b/c we are looking for a single 
-	 * document with a globally unique identifier.
-	 */
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
-
-printf("querying database\n");	
 
 	if(!(mongoc_cursor_next(cursor, &result_dispatch))){
 		//We failed to find the desired dispatch - TODO: give this failure a more robust
 		//return value for effective error checking...
-		printf("empty doc, result does not exist\n");
-		exit(0);
+		return -1;		
 	}
 
-printf("found result\n");
-	
-	/* print result_dispatch as json for debugging purposes */
 	str = bson_as_canonical_extended_json(result_dispatch, NULL);
 	printf("%s\n", str);
 
-printf("parsing result dispatch to construct dispatch struct with c data types\n");
+	parse_dispatch_bson(&dis, result_dispatch);
+	print_dispatch_struct(&dis);	
+	dispatch_heap_cleanup(&dis);
 
-	dis = bson_to_dispatch(result_dispatch);
-	
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
 	
-	return dis; 
-
+	return 0; 
 }
 
 
 
-struct dispatch *
-bson_to_dispatch(const bson_t *bson_dispatch){
+int
+parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 
-	struct dispatch *dis = (struct dispatch *)malloc(sizeof(struct dispatch));
-	dis->body = (struct body *)malloc(sizeof(struct dispatch_body));
-	dis->parent = (struct parent *)malloc(sizeof(struct dispatch_parent));
-	bson_iter_t iter, sub_iter;
-	const char *body_media_path;
-	const char *body_text;
+	struct dispatch_body *body;
+	struct	dispatch_parent *parent;
+	bson_iter_t iter;
+	bson_iter_t sub_iter;
+	const char *media_path;
+	const char *text;
+	uint32_t media_path_len;
+	uint32_t text_len;	
+
+
+	body = (struct dispatch_body *) malloc(sizeof(struct dispatch_body));
+	parent = (struct dispatch_parent *) malloc(sizeof(struct dispatch_parent));
+	
+	if(body == NULL || parent == NULL){
+		perror("malloc");
+		return -1;
+	}	
+
 
 	/* bind a bson iterator to the bson document that was found from our query */
 	bson_iter_init(&iter, bson_dispatch);
 
 	/* Fill dispatch_body struct */
 	if(bson_iter_find_descendant(&iter, "body.media_path", &sub_iter)){
-		body_media_path = bson_iter_utf8(&sub_iter, NULL);
-		dis->body->media_path = strdup(body_media_path);
+		media_path = bson_iter_utf8(&sub_iter, &media_path_len);
+		if((body->media_path = malloc(media_path_len)) == NULL){
+			perror("malloc");
+			return -1;
+		}
+		body->media_path = strdup(media_path);
 	}
 	if(bson_iter_next(&sub_iter)){
-		body_text =  bson_iter_utf8(&sub_iter, NULL);
-		dis->body->text = strdup(body_text);  
+		text =  bson_iter_utf8(&sub_iter, &text_len);
+		if((body->text = malloc(text_len)) == NULL){
+			perror("malloc");
+			return -1;
+		}
+		body->text = strdup(text);
 	}
+	dis->body = body;
 
 	
 	if(bson_iter_find(&iter, "user_id")){
@@ -362,11 +339,12 @@ bson_to_dispatch(const bson_t *bson_dispatch){
 
 	/* Fill dispatch_parent struct */
 	if(bson_iter_find_descendant(&iter, "dispatch_parent.type", &sub_iter)){
-		dis->parent->type = bson_iter_int32(&sub_iter);
+		parent->type = bson_iter_int32(&sub_iter);
 	}
 	if(bson_iter_next(&sub_iter)){
-		dis->parent->id =  bson_iter_int64(&sub_iter);  
+		parent->id =  bson_iter_int64(&sub_iter);  
 	}
+	dis->parent = parent;
 
 
 	if(bson_iter_find(&iter, "fragmentation")){
@@ -376,10 +354,19 @@ bson_to_dispatch(const bson_t *bson_dispatch){
 		dis->dispatch_id = bson_iter_int64(&iter);
 	}
 
-	print_dispatch_struct(dis);
-
-	return dis;
+	return 0;
 }
+
+
+void
+dispatch_heap_cleanup(struct dispatch *dis)
+{
+	free(dis->body->media_path);
+	free(dis->body->text);
+	free(dis->body);
+	free(dis->parent);
+}
+
 
 int
 print_dispatch_struct(struct dispatch *dis)
@@ -391,24 +378,23 @@ print_dispatch_struct(struct dispatch *dis)
 	printf("user_id: %ld\n",dis->user_id);	
 		
 	printf("timestamp: %ld \n",(long) dis->timestamp);	
-	printf("audience_size %d\n", dis->audience_size);	
+	printf("audience_size: %d\n", dis->audience_size);	
 	for(int i = 0; i < dis->audience_size; i++){
-		printf("user id = %ld\n", (dis->audience[i]));
+		printf("	audience user_id: %ld\n", (dis->audience[i]));
 	}
 	printf("num_tags: %d\n", dis->num_tags);
 	for(int i = 0; i < dis->num_tags; i++){
 		if(strcmp(dis->tags[i], "") == 0){
-			printf("no more tags\n");
 			break;
 		}
 		else{
-			printf("tags: %s\n", (dis->tags[i]));
+			printf("	tags: %s\n", (dis->tags[i]));
 		}
 	}		
 	printf("num_user_tags %d\n", dis->num_user_tags);
 	for(int i = 0; i < dis->num_user_tags; i++){
 		if(dis->user_tags[i] > 0){
-			printf("user tags: %ld\n", (dis->user_tags[i]));
+			printf("	tagged user_id: %ld\n", (dis->user_tags[i]));
 		}
 		else{
 			break;
