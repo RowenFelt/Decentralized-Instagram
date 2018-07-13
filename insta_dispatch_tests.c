@@ -40,16 +40,18 @@ main(int argc, char* argv[])
 		dis.audience[i] = (i + 1)*1000;
 	}
 
-	dis.tags[0] = "cute";
-	dis.tags[1] = "lolcats";
-	dis.tags[2] =  "wow";
-	dis.tags[3] = "";
+	dis.num_tags = 3;	
+
+	strcpy(dis.tags[0], "cute");
+	strcpy(dis.tags[1], "lolcats");
+	strcpy(dis.tags[2], "wow");
 	
+	dis.num_user_tags = 4;
+
 	dis.user_tags[0] = 1111;	
 	dis.user_tags[1] = 2222;
 	dis.user_tags[2] = 3333;
 	dis.user_tags[3] = 4444;
-	dis.user_tags[4] = 0;
 	
 	parent.type = 0;
 	parent.id = 1234;
