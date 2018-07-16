@@ -30,10 +30,6 @@ insert_dispatch(struct dispatch *dis) {
   bson_t child;    
 	bson_error_t error;
 
-  char buf[16];   
-  const char *key;  
-  size_t keylen = 0;    
-  char* str;         
 	time_t rawtimestamp;
 
   struct mongo_user_connection cn;
@@ -63,39 +59,47 @@ insert_dispatch(struct dispatch *dis) {
   BSON_APPEND_INT32(dispatch, "audience_size", dis->audience_size); //who sees dispatch
 
   /* Store specific audience for a group message */
-  if (dis->audience_size > 0 && dis->audience_size < MAX_GROUP_SIZE){
-    BSON_APPEND_ARRAY_BEGIN(dispatch, "audience", &child);
-    for (uint32_t i = 0; i < dis->audience_size; i++){
-      keylen = bson_uint32_to_string (i, &key, buf, sizeof (str));
-      bson_append_int64(&child, key, (int) keylen, dis->audience[i]);
-    }
-    bson_append_array_end(dispatch, &child);
-  }
+  if (dis->audience_size > MAX_GROUP_SIZE){
+		return -1;
+	}	
+  BSON_APPEND_ARRAY_BEGIN(dispatch, "audience", &child);
+	if(dis->audience_size > 0){
+		for (uint32_t i = 0; i < dis->audience_size; i++){
+			BSON_APPEND_INT64(&child, "audience", dis->audience[i]);
+		}
+	}
+	bson_append_array_end(dispatch, &child);
+
+
 
   BSON_APPEND_INT32(dispatch, "num_tags", dis->num_tags);
-	
 	/* Insert any hashtags as sub-array */
-	if (dis->num_tags > 0 && dis->num_tags < MAX_NUM_TAGS){
-	  BSON_APPEND_ARRAY_BEGIN(dispatch, "tags", &child);
-		for (uint32_t i = 0; i < dis->num_tags; i++){
-			keylen = bson_uint32_to_string(i, &key, buf, sizeof(str));
-			BSON_APPEND_UTF8(&child, key, dis->tags[i]);
-		}
-		bson_append_array_end(dispatch, &child);
+	if(dis->num_tags > MAX_NUM_TAGS){
+		return -1;
 	}
+	BSON_APPEND_ARRAY_BEGIN(dispatch, "tags", &child);
+	if (dis->num_tags > 0){
+		for (uint32_t i = 0; i < dis->num_tags; i++){
+			BSON_APPEND_UTF8(&child, "tags", dis->tags[i]);
+		}
+	}
+	bson_append_array_end(dispatch, &child);
+
+
 
   BSON_APPEND_INT32(dispatch, "num_user_tags", dis->num_user_tags);
   
 	/* Insert any tagged users as sub-array */
-	if (dis->num_user_tags > 0 && dis->num_user_tags <	MAX_NUM_TAGS){
-		BSON_APPEND_ARRAY_BEGIN(dispatch, "user_tags", &child);
+	if (dis->num_user_tags >	MAX_NUM_TAGS){
+		return -1;
+	}	
+	BSON_APPEND_ARRAY_BEGIN(dispatch, "user_tags", &child);
+	if(dis->num_user_tags > 0){
 		for (uint32_t i = 0; i < dis->num_user_tags; i++){
-			keylen = bson_uint32_to_string(i, &key, buf, sizeof(str));
-			printf("dis->user_tags[%d]: %ld\n", i, dis->user_tags[i]);
-			bson_append_int64(&child, key, (int) keylen, dis->user_tags[i]);
+			BSON_APPEND_INT64(&child, "user_tags", dis->user_tags[i]);
 		}
-		bson_append_array_end(dispatch, &child);
 	}
+	bson_append_array_end(dispatch, &child);
 
   /* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "dispatch_parent", &child);
@@ -116,10 +120,11 @@ insert_dispatch(struct dispatch *dis) {
      fprintf (stderr, "%s\n", error.message);
   }
 
+	parse_dispatch_bson(dis, dispatch);
+	print_dispatch_struct(dis);
+
   /* clean up bson doc and collection */
   bson_destroy (dispatch);
-  
-	print_dispatch_struct(dis);
 
 	return mongo_user_teardown(&cn);
 
@@ -212,7 +217,7 @@ search_dispatch_by_id(uint64_t dispatch_id)
 int
 search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 {
-	struct dispatch dis;
+	struct dispatch *dis = malloc(sizeof(struct dispatch));
   bson_t *target_dispatch;  
 	bson_t child;
 	const bson_t *result_dispatch;
@@ -235,9 +240,11 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 	
 	while(mongoc_cursor_next(cursor, &result_dispatch) && i < num_children){
-		parse_dispatch_bson(&dis, result_dispatch);
-		print_dispatch_struct(&dis);	
-		dispatch_heap_cleanup(&dis);
+		dis = malloc(sizeof(struct dispatch));
+		parse_dispatch_bson(dis, result_dispatch);
+	//	print_dispatch_struct(dis);	
+		dispatch_heap_cleanup(dis);
+		free(dis);
 		i++;
 	}
 
@@ -368,9 +375,9 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	if(bson_iter_find(&iter, "num_user_tags")){
 		dis->num_user_tags = bson_iter_int32(&iter);
 	}
-	if(bson_iter_find(&iter, "user_tags") && dis->num_user_tags != 0){
+	if(bson_iter_find(&iter, "user_tags")){
 
-		if(BSON_ITER_HOLDS_ARRAY(&iter)){
+		if(BSON_ITER_HOLDS_ARRAY(&iter) && dis->num_user_tags != 0){
 	
 			const uint8_t *array = NULL; 
 			uint32_t array_len = 0;
@@ -404,6 +411,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	if(bson_iter_find(&iter, "dispatch_id")){
 		dis->dispatch_id = bson_iter_int64(&iter);
 	}
+
+	print_dispatch_struct(dis);
 
 	return 0;
 }
