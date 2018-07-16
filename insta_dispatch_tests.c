@@ -155,8 +155,10 @@ main(int argc, char* argv[])
 	free(parent);
 	
 	/* search by parent's dispatch id */
+	printf("\n\nsearch dispatch by parent_id\n\n");
 	int result = search_dispatch_by_parent_id( 6666, 50);		
 	printf("there were %d results", result);
-	search_dispatch_by_id(6666);
+	printf("\n\nsearch dispatch by user audience\n\n");
+	search_dispatch_by_user_audience(1234, NULL, 0);
 }
 
