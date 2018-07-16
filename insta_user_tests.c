@@ -12,16 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-	/* test search_user */
-	printf("search_user('rfelt', INSTA_FOLLOWER);\n");
-	search_user_by_name("rfelt", INSTA_FOLLOWER);
-	printf("search_user('Rowen Felt', INSTA_FOLLOWEE);\n");
-	search_user_by_name("Rowen Felt", INSTA_FOLLOWEE);
-	printf("search_user('rowen', INSTA_UNKNOWN);\n");
-	search_user_by_name("rowen", INSTA_UNKNOWN);
-	printf("\n\n\n");
-
-	/* initialize test user struct */
+	/* initialize test user structs */
 	struct user cb;
 	struct personal_data pd;
 	struct insta_relations followers;
@@ -43,6 +34,48 @@ int main(int argc, char *argv[])
 	following.user_ids = following_ids;
 	cb.following = &following;
 	
+	struct user rf;
+	struct personal_data rf_pd;
+	struct insta_relations rf_followers;
+	struct insta_relations rf_following;
+	rf.user_id = 11254155;
+	rf.username = "rfelt";
+	rf.image_path = "/images/rfelt_image/fake_path";
+	rf_pd.name = "Rowen Felt";
+	rf.bio = &rf_pd;
+	rf.fragmentation = 0;
+	rf_followers.direction = 0;
+	rf_followers.count = 3;
+	uint64_t rf_follower_ids[3] = {100, 33, 423};
+	rf_followers.user_ids = rf_follower_ids;
+	rf.followers = &rf_followers;
+	rf_following.direction = 1;
+	rf_following.count = 4;
+	uint64_t rf_following_ids[4] = {234, 151, 2, 34};
+	rf_following.user_ids = rf_following_ids;
+	rf.following = &rf_following;
+
+	struct user pj;
+	struct personal_data pj_pd;
+	struct insta_relations pj_followers;
+	struct insta_relations pj_following;
+	pj.user_id = 159178;
+	pj.username = "pjonhson";
+	pj.image_path = "/images/pjohnson_image/fake_path";
+	pj_pd.name = "Pete Johnson";
+	pj.bio = &pj_pd;
+	pj.fragmentation = 0;
+	pj_followers.direction = 0;
+	pj_followers.count = 2;
+	uint64_t pj_follower_ids[2] = {16, 88};
+	pj_followers.user_ids = pj_follower_ids;
+	pj.followers = &pj_followers;
+	pj_following.direction = 1;
+	pj_following.count = 9;
+	uint64_t pj_following_ids[9] = {66666, 64, 346, 15235, 2356, 6, 2, 3, 99};
+	pj_following.user_ids = pj_following_ids;
+	pj.following = &pj_following;
+	
 	/* test insert_user */
 	printf("inserting user, %s\n", cb.username);
 	insert_user(&cb);
@@ -54,6 +87,19 @@ int main(int argc, char *argv[])
 	delete_user(12345);
 	printf("search for user with id %d, should show nothing there\n", 12345);
   search_user_by_id(12345, INSTA_FOLLOWER);
+	insert_user(&rf);
+	insert_user(&pj);
+
+	/* test search_user */
+	printf("search_user('rfelt', INSTA_FOLLOWER);\n");
+	search_user_by_name("rfelt", INSTA_FOLLOWER);
+	printf("search_user('Rowen Felt', INSTA_FOLLOWEE);\n");
+	search_user_by_name("Rowen Felt", INSTA_FOLLOWEE);
+	printf("search_user('rowen', INSTA_UNKNOWN);\n");
+	search_user_by_name("rowen", INSTA_UNKNOWN);
+	printf("search_user('campbell', INSTA_UNKNOWN)\n");
+	search_user_by_name("campbell", INSTA_UNKNOWN);
+	printf("\n\n\n");		
 
 	return 0;
 }
