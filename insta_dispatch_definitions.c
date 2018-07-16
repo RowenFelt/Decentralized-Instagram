@@ -120,9 +120,6 @@ insert_dispatch(struct dispatch *dis) {
      fprintf (stderr, "%s\n", error.message);
   }
 
-	parse_dispatch_bson(dis, dispatch);
-	print_dispatch_struct(dis);
-
   /* clean up bson doc and collection */
   bson_destroy (dispatch);
 
@@ -181,7 +178,6 @@ search_dispatch_by_id(uint64_t dispatch_id)
   bson_t *target_dispatch;  
 	const bson_t *result_dispatch;
   mongoc_cursor_t *cursor;   
-	char *str;
 
 	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
@@ -199,9 +195,6 @@ search_dispatch_by_id(uint64_t dispatch_id)
 		return -1;		
 	}
 
-	str = bson_as_canonical_extended_json(result_dispatch, NULL);
-	printf("%s\n", str);
-
 	parse_dispatch_bson(&dis, result_dispatch);
 	print_dispatch_struct(&dis);	
 	dispatch_heap_cleanup(&dis);
@@ -213,11 +206,10 @@ search_dispatch_by_id(uint64_t dispatch_id)
 }
 
 
-/* TODO: NOT TESTED */
 int
 search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 {
-	struct dispatch *dis = malloc(sizeof(struct dispatch));
+	struct dispatch dis;
   bson_t *target_dispatch;  
 	bson_t child;
 	const bson_t *result_dispatch;
@@ -240,11 +232,9 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 	
 	while(mongoc_cursor_next(cursor, &result_dispatch) && i < num_children){
-		dis = malloc(sizeof(struct dispatch));
-		parse_dispatch_bson(dis, result_dispatch);
-	//	print_dispatch_struct(dis);	
-		dispatch_heap_cleanup(dis);
-		free(dis);
+		parse_dispatch_bson(&dis, result_dispatch);
+		print_dispatch_struct(&dis);	
+		dispatch_heap_cleanup(&dis);
 		i++;
 	}
 
@@ -411,8 +401,6 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	if(bson_iter_find(&iter, "dispatch_id")){
 		dis->dispatch_id = bson_iter_int64(&iter);
 	}
-
-	print_dispatch_struct(dis);
 
 	return 0;
 }
