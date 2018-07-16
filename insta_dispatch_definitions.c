@@ -34,6 +34,7 @@ insert_dispatch(struct dispatch *dis) {
   const char *key;  
   size_t keylen = 0;    
   char* str;         
+	time_t rawtimestamp;
 
   struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
@@ -50,9 +51,13 @@ insert_dispatch(struct dispatch *dis) {
 
   BSON_APPEND_INT64(dispatch, "user_id", dis->user_id);
 
- /* TODO: FIX THE TIMESTAMP */
-  time_t rawtime = time(NULL);
-  dis->timestamp = rawtime;  
+  rawtimestamp = time(NULL);
+	if(rawtimestamp == (time(NULL) - 1)){
+		(void) fprintf(stderr, "Faulty current time\n");
+		exit(EXIT_FAILURE);
+	}
+	
+  dis->timestamp = rawtimestamp;  
   BSON_APPEND_TIME_T(dispatch, "timestamp", dis->timestamp);
 
   BSON_APPEND_INT32(dispatch, "audience_size", dis->audience_size); //who sees dispatch
@@ -84,8 +89,9 @@ insert_dispatch(struct dispatch *dis) {
 	/* Insert any tagged users as sub-array */
 	if (dis->num_user_tags > 0 && dis->num_user_tags <	MAX_NUM_TAGS){
 		BSON_APPEND_ARRAY_BEGIN(dispatch, "user_tags", &child);
-		for (uint32_t i = 0; i < dis->num_tags; i++){
+		for (uint32_t i = 0; i < dis->num_user_tags; i++){
 			keylen = bson_uint32_to_string(i, &key, buf, sizeof(str));
+			printf("dis->user_tags[%d]: %ld\n", i, dis->user_tags[i]);
 			bson_append_int64(&child, key, (int) keylen, dis->user_tags[i]);
 		}
 		bson_append_array_end(dispatch, &child);
@@ -112,7 +118,12 @@ insert_dispatch(struct dispatch *dis) {
 
   /* clean up bson doc and collection */
   bson_destroy (dispatch);
-  return mongo_user_teardown(&cn);
+  
+	print_dispatch_struct(dis);
+
+	return mongo_user_teardown(&cn);
+
+
 }
 
 int 
@@ -196,6 +207,46 @@ search_dispatch_by_id(uint64_t dispatch_id)
 	return 0; 
 }
 
+
+/* TODO: NOT TESTED */
+int
+search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
+{
+	struct dispatch dis;
+  bson_t *target_dispatch;  
+	bson_t child;
+	const bson_t *result_dispatch;
+  mongoc_cursor_t *cursor;
+	int i = 0;  
+
+	struct mongo_user_connection cn;
+	cn.uri_string = "mongodb://localhost:27017";
+
+  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+
+  target_dispatch = bson_new();
+  
+	/* Insert dispatch_parent struct w/ parent's id */
+  BSON_APPEND_DOCUMENT_BEGIN(target_dispatch, "dispatch_parent", &child);
+  BSON_APPEND_INT32(&child, "type", (int32_t) 1);
+  BSON_APPEND_INT64(&child, "id", dispatch_id); 
+  bson_append_document_end(target_dispatch, &child);
+
+	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
+	
+	while(mongoc_cursor_next(cursor, &result_dispatch) && i < num_children){
+		parse_dispatch_bson(&dis, result_dispatch);
+		print_dispatch_struct(&dis);	
+		dispatch_heap_cleanup(&dis);
+		i++;
+	}
+
+	mongoc_cursor_destroy(cursor);
+	bson_destroy(target_dispatch);
+	bson_destroy(&child);
+	
+	return 0; 
+}
 
 
 int
@@ -371,13 +422,15 @@ dispatch_heap_cleanup(struct dispatch *dis)
 int
 print_dispatch_struct(struct dispatch *dis)
 {
+	char *time_as_string;
+	
 	printf("-----------------------------------------------------------------------\n");
 	printf("body: \n");	
 	printf("	media_path: %s\n",dis->body->media_path);
 	printf("	text: %s\n", dis->body->text);
 	printf("user_id: %ld\n",dis->user_id);	
-		
-	printf("timestamp: %ld \n",(long) dis->timestamp);	
+	time_as_string = ctime(&dis->timestamp);		
+	printf("timestamp: %s \n",(time_as_string));	
 	printf("audience_size: %d\n", dis->audience_size);	
 	for(int i = 0; i < dis->audience_size; i++){
 		printf("	audience user_id: %ld\n", (dis->audience[i]));
@@ -410,7 +463,7 @@ print_dispatch_struct(struct dispatch *dis)
 }
 
 int
-push_dispatch(uint64_t dispatch_id)
+push_dispatch(struct dispatch *dis)
 {
 	//TODO
 	return 0; 
