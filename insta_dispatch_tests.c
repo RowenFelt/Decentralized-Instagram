@@ -155,7 +155,8 @@ main(int argc, char* argv[])
 	free(parent);
 	
 	/* search by parent's dispatch id */
-	search_dispatch_by_parent_id((uint64_t) 6666, 3);	
-
+	int result = search_dispatch_by_parent_id( 6666, 50);		
+	printf("there were %d results", result);
+	search_dispatch_by_id(6666);
 }
 

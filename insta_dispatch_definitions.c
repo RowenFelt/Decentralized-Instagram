@@ -37,6 +37,10 @@ insert_dispatch(struct dispatch *dis) {
 
   mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 
+	if(search_dispatch_by_id(dis->dispatch_id) == 0){
+		printf("dispatch already in database\n");
+		return -1;
+	}
   dispatch = bson_new();
 
   /* Dispatch body comprised of media and text */
@@ -215,7 +219,8 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 	const bson_t *result_dispatch;
   mongoc_cursor_t *cursor;
 	int i = 0;  
-
+	int result = 0;
+	
 	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
 
@@ -232,6 +237,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 	
 	while(mongoc_cursor_next(cursor, &result_dispatch) && i < num_children){
+		result+=1;
 		parse_dispatch_bson(&dis, result_dispatch);
 		print_dispatch_struct(&dis);	
 		dispatch_heap_cleanup(&dis);
@@ -242,7 +248,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 	bson_destroy(target_dispatch);
 	bson_destroy(&child);
 	
-	return 0; 
+	return result; 
 }
 
 
