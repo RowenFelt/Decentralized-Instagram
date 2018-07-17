@@ -175,9 +175,9 @@ int get_user_ip_by_username(char *keyspace, char *table, char *username){
 }
 
 
-int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
+char * get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
 	/* searches for a user using their user_id, prints IP address 
-	 * and returns number of results */
+	 * and returns string of inet */
 
 	/* SETUP CASSANDRA CONNECTION */
   struct cass_connect connection;
@@ -190,8 +190,7 @@ int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
 	const CassResult *user_query_result;
 	const CassValue *cass_ip;
 	CassInet ip;
-	char ip_string[16];
-	int result;
+	char *ip_string;
   
 	session_connection(&connection);
 
@@ -212,7 +211,7 @@ int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
   cass_statement_free(get_user); //Free statement
 	if((connection.err_code = cass_future_error_code(statement_future)) !=  CASS_OK){
     printf("Statement result: %s\n", cass_error_desc(connection.err_code));
-		return connection.err_code;
+		return NULL;	
 	}
 
   //get results from future - returns CassResult
@@ -221,12 +220,13 @@ int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
 
   if(user_query_result == NULL){
     printf("user query result is NULL, exiting...\n");
-		exit(2);
+		return NULL;
   }
 
-	//count the number of results
-	result = cass_result_row_count(user_query_result);
-
+	ip_string = malloc(sizeof(char) * 46);
+	if(ip_string == NULL){
+		perror("malloc");
+	}
   //get first row from result - returns CassRow
   //first_row = cass_result_first_row(user_query_result);
 	CassIterator *iterator = cass_iterator_from_result(user_query_result);
@@ -238,6 +238,8 @@ int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
 			printf("Error converting cass value to standard value\n");
 		}
 
+
+		
 		cass_inet_string(ip, ip_string);
 
 	  printf("user_id:%s ip address: %s\n", query_target, ip_string);	
@@ -245,7 +247,7 @@ int get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
 	cass_iterator_free(iterator);
 
 	tear_down_connection(&connection); 
-	return result;
+	return ip_string;
 }
 
 

@@ -80,25 +80,25 @@ int main(int argc, char *argv[])
 	printf("inserting user, %s\n", cb.username);
 	insert_user(&cb);
 	printf("searching for user %s\n", cb.username);
-	search_user_by_name("cboswell", INSTA_FOLLOWER);
+	search_user_by_name_mongo("cboswell");
 	printf("search for user with id %d\n", 12345);
-	search_user_by_id(12345, INSTA_FOLLOWER);
+	search_user_by_id_mongo(12345);
 	printf("delete user with id %d\n", 12345);
 	delete_user(12345);
 	printf("search for user with id %d, should show nothing there\n", 12345);
-  search_user_by_id(12345, INSTA_FOLLOWER);
+  search_user_by_id_cass(12345);
 	insert_user(&rf);
 	insert_user(&pj);
 
 	/* test search_user */
 	printf("search_user('rfelt', INSTA_FOLLOWER);\n");
-	search_user_by_name("rfelt", INSTA_FOLLOWER);
+	search_user_by_name_mongo("rfelt");
 	printf("search_user('Rowen Felt', INSTA_FOLLOWEE);\n");
-	search_user_by_name("Rowen Felt", INSTA_FOLLOWEE);
+	search_user_by_name_mongo("Rowen Felt");
 	printf("search_user('rowen', INSTA_UNKNOWN);\n");
-	search_user_by_name("rowen", INSTA_UNKNOWN);
+	search_user_by_name_cass("rowen");
 	printf("search_user('campbell', INSTA_UNKNOWN)\n");
-	search_user_by_name("campbell", INSTA_UNKNOWN);
+	search_user_by_name_cass("campbell");
 	printf("\n\n\n");		
 
 	return 0;

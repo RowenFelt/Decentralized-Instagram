@@ -5,7 +5,13 @@ MONGOLINK=`pkg-config --libs libmongoc-1.0`
 CASSFLAGS=-L$(HOME)/instaclone/cpp-driver/build -I$(HOME)/instaclone/cpp-driver/include/ -lcassandra
 
 .PHONY: all
-all: practice cass_user.so get_user_mongo insta_user_definitions.o insta_user_definitions.so insta_dispatch_definitions.o insta_dispatch_definitions.so insta_mongo_connect.o insta_user_tests insta_dispatch_tests
+all: practice cass_user.so get_user_mongo insta_user_definitions.o insta_user_definitions.so insta_dispatch_definitions.o insta_dispatch_definitions.so insta_mongo_connect.o insta_user_tests insta_dispatch_tests insta_tcp_server insta_client
+
+insta_client: insta_client.c insta_user_definitions.so
+	gcc $(CFLAGS) -o $@ $^ $(MONGOCOMP) $(MONGOLINK) $(CASSFLAGS)
+
+insta_tcp_server: insta_tcp_server.c
+	gcc $(CFLAGS) -o $@ $^ 
 
 insta_user_tests: insta_user_tests.c insta_user_definitions.so
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOFLAGS)
@@ -45,4 +51,4 @@ practice: practice.c cass_user.so
 
 .PHONY: clean
 clean:
-	rm -f practice cass_add_user cass_get_user cass_init cass_user.so cass_user.o util.o get_user_mongo insta_mongo_connect.o insta_user_definitions.o insta_user_tests insta_user_definitions.so insta_dispatch_definitions.o insta_dispatch_definitions.so insta_dispatch_tests
+	rm -f practice cass_add_user cass_get_user cass_init cass_user.so cass_user.o util.o get_user_mongo insta_mongo_connect.o insta_user_definitions.o insta_user_tests insta_user_definitions.so insta_dispatch_definitions.o insta_dispatch_definitions.so insta_dispatch_tests insta_tcp_server insta_client
