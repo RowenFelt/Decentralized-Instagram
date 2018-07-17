@@ -34,12 +34,10 @@ init_user(void)
 }
 
 int 
-search_user_by_name(char *username, int flags)
+search_user_by_name_mongo(char *username)
 {
-	/* search for a user in the mongoDB list of followers
-   *  followees or the Cassandra database of users using 
-   *  the respective flags INSTA_FOLLOWER, INSTA_FOLLOWEE,
-   *  INSTA_UNKNOWN. Return number of results found or -1 on failure */ 
+	/* search for a user by username in the mongo database
+   * returns the number of results found */
 	struct mongo_user_connection cn;
 	mongoc_cursor_t *cursor;
 	bson_t *query;
@@ -48,48 +46,50 @@ search_user_by_name(char *username, int flags)
 	int result = 0;
 	int n;
 
-	if(flags == INSTA_FOLLOWER || flags == INSTA_FOLLOWEE) {
-		cn.uri_string = "mongodb://localhost:27017";
-		mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
-		query = BCON_NEW (
-			"$or", "[",
-			"{", "username", BCON_UTF8(username), "}",
-			"{", "bio.name", BCON_UTF8(username), "}",
-			"]"	
-		);
-		cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
-		while (mongoc_cursor_next (cursor, &doc)) {
-      result+=1;
-			struct user usr;
-      parse_user_bson(&usr, doc); 
-      print_user_struct(&usr);
-      user_heap_cleanup(&usr);
-		}
-		if (mongoc_cursor_error (cursor, &error)) {
-      fprintf (stderr, "An error occurred: %s\n", error.message);
-		}
-		mongoc_cursor_destroy (cursor);
-		bson_destroy (query);
-		n = mongo_user_teardown(&cn);
-		if(result == 0){
-			return n;
-		}
+	cn.uri_string = "mongodb://localhost:27017";
+	mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
+	query = BCON_NEW (
+		"$or", "[",
+		"{", "username", BCON_UTF8(username), "}",
+		"{", "bio.name", BCON_UTF8(username), "}",
+		"]"	
+	);
+	cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
+	while (mongoc_cursor_next (cursor, &doc)) {
+    result+=1;
+		struct user usr;
+    parse_user_bson(&usr, doc); 
+    print_user_struct(&usr);
+    user_heap_cleanup(&usr);
 	}
-	else if(flags == INSTA_UNKNOWN){
-		get_user_ip_by_username(INSTA_DB, CASS_TABLE, username);	
+	if (mongoc_cursor_error (cursor, &error)) {
+    fprintf (stderr, "An error occurred: %s\n", error.message);
+	}
+	mongoc_cursor_destroy (cursor);
+	bson_destroy (query);
+	n = mongo_user_teardown(&cn);
+	if(result == 0){
+		return n;
 	}
 	return result;
 }
 
+int 
+search_user_by_name_cass(char *username)
+{
+	/* searches for a user in the Cassandra database by username
+   * returns the number of results found */ 	
+	int result = 0;
+	result = get_user_ip_by_username(INSTA_DB, CASS_TABLE, username);
+	return result;
+}
 
 int 
-search_user_by_id(uint64_t user_id, int flags)
+search_user_by_id_mongo(uint64_t user_id)
 {
 	/* search for a user in the mongoDB list of 
-   * followers followees or the Cassandra database
-   *  of users using the respective flags 
-   *  INSTA_FOLLOWER, INSTA_FOLLOWEE, INSTA_UNKNOWN. 
-   *  Return number of results found or -1 on failure */
+   * user by user_id. Return number of results
+   * found or -1 on failure */
   struct mongo_user_connection cn;
   mongoc_cursor_t *cursor;
   bson_t *query;
@@ -98,34 +98,39 @@ search_user_by_id(uint64_t user_id, int flags)
   int result = 0;
   int n;
 
-  if(flags == INSTA_FOLLOWER || flags == INSTA_FOLLOWEE) {
-    cn.uri_string = "mongodb://localhost:27017";
-    mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
-    query = BCON_NEW ("user_id", BCON_INT64(user_id));
-    cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
-    while (mongoc_cursor_next (cursor, &doc)) {
-      result+=1;
-      struct user usr;
-			parse_user_bson(&usr, doc); 
-			print_user_struct(&usr);
-			user_heap_cleanup(&usr);
-    }
-    if (mongoc_cursor_error (cursor, &error)) {
-      fprintf (stderr, "An error occurred: %s\n", error.message);
-    }
-    mongoc_cursor_destroy (cursor);
-    bson_destroy (query);
-    n = mongo_user_teardown(&cn);
-    if(result == 0){
-      return n;
-    }
+  cn.uri_string = "mongodb://localhost:27017";
+  mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
+  query = BCON_NEW ("user_id", BCON_INT64(user_id));
+  cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
+  while (mongoc_cursor_next (cursor, &doc)) {
+    result+=1;
+    struct user usr;
+		parse_user_bson(&usr, doc); 
+		print_user_struct(&usr);
+		user_heap_cleanup(&usr);
   }
-  else if(flags == INSTA_UNKNOWN){
-    get_user_ip_by_id(INSTA_DB, CASS_TABLE, user_id);
+  if (mongoc_cursor_error (cursor, &error)) {
+    fprintf (stderr, "An error occurred: %s\n", error.message);
+  }
+  mongoc_cursor_destroy (cursor);
+  bson_destroy (query);
+  n = mongo_user_teardown(&cn);
+  if(result == 0){
+    return n;
   }
   return result;
 }
 
+char *
+search_user_by_id_cass(uint64_t user_id)
+{
+	/* searches the cassandra user database by user_id,
+   * returns char * IP address in dotted quad notation
+   * on success, or NULL on failure. The inet must be freed */
+	char *inet = NULL;
+	inet = get_user_ip_by_id(INSTA_DB, CASS_TABLE, user_id);
+	return inet;
+}
 
 int
 insert_user(struct user *new_user)
@@ -151,7 +156,7 @@ insert_user(struct user *new_user)
 		return error;
 	}
 
-	if((n = search_user_by_id(new_user->user_id, INSTA_FOLLOWER)) > 0) {
+	if((n = search_user_by_id_mongo(new_user->user_id)) > 0) {
 		printf("user with user_id %ld already exists in table\n", new_user->user_id);
 		return -1;
 	}

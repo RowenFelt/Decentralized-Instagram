@@ -37,6 +37,10 @@ insert_dispatch(struct dispatch *dis) {
 
   mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 
+	if(search_dispatch_by_id(dis->dispatch_id) == 0){
+		printf("dispatch already in database\n");
+		return -1;
+	}
   dispatch = bson_new();
 
   /* Dispatch body comprised of media and text */
@@ -172,12 +176,15 @@ delete_dispatch(uint64_t dispatch_id)
 }
 
 int
-search_dispatch_by_id(uint64_t dispatch_id)
+search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int size)
 {
 	struct dispatch dis;
   bson_t *target_dispatch;  
+	bson_t child;
 	const bson_t *result_dispatch;
   mongoc_cursor_t *cursor;   
+  char buf[10];
+
 
 	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
@@ -185,8 +192,25 @@ search_dispatch_by_id(uint64_t dispatch_id)
   mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 
   target_dispatch = bson_new();
-	BSON_APPEND_INT64(target_dispatch, "dispatch_id", dispatch_id);
-
+	
+	if(size == 0){
+		target_dispatch = BCON_NEW (
+			  "$and", "[",
+				"{", "user_id", BCON_INT64(user_id), "}",
+				"{", "audience_size", BCON_INT32(0), "}",
+				"]"
+			);
+	}
+	else{
+		BSON_APPEND_INT64(target_dispatch, "user_id", user_id);
+		BSON_APPEND_ARRAY_BEGIN (target_dispatch, "audience", &child);
+	  for (int i = 0; i < size; ++i) {
+		  memset(buf, '\0', 10);
+		  sprintf(buf, "%d", i);
+		  BSON_APPEND_INT64(&child, buf, audience[i]);
+		}
+		bson_append_array_end (target_dispatch, &child);
+	}
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 
 	if(!(mongoc_cursor_next(cursor, &result_dispatch))){
@@ -205,6 +229,40 @@ search_dispatch_by_id(uint64_t dispatch_id)
 	return 0; 
 }
 
+int
+search_dispatch_by_id(uint64_t dispatch_id)
+{
+  struct dispatch dis;
+  bson_t *target_dispatch;  
+  const bson_t *result_dispatch;
+  mongoc_cursor_t *cursor;
+
+  struct mongo_user_connection cn;
+  cn.uri_string = "mongodb://localhost:27017";
+
+  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+  
+  target_dispatch = bson_new();
+  BSON_APPEND_INT64(target_dispatch, "dispatch_id", dispatch_id);
+  
+  cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
+  
+  if(!(mongoc_cursor_next(cursor, &result_dispatch))){
+    //We failed to find the desired dispatch - TODO: give this failure a more robust
+    //return value for effective error checking...
+    return -1;
+  }
+  
+  parse_dispatch_bson(&dis, result_dispatch);
+  print_dispatch_struct(&dis);
+  dispatch_heap_cleanup(&dis);
+  
+  mongoc_cursor_destroy(cursor);
+  bson_destroy(target_dispatch);
+  
+  return 0;
+}
+
 
 int
 search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
@@ -215,7 +273,8 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 	const bson_t *result_dispatch;
   mongoc_cursor_t *cursor;
 	int i = 0;  
-
+	int result = 0;
+	
 	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
 
@@ -232,6 +291,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 	
 	while(mongoc_cursor_next(cursor, &result_dispatch) && i < num_children){
+		result+=1;
 		parse_dispatch_bson(&dis, result_dispatch);
 		print_dispatch_struct(&dis);	
 		dispatch_heap_cleanup(&dis);
@@ -242,7 +302,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 	bson_destroy(target_dispatch);
 	bson_destroy(&child);
 	
-	return 0; 
+	return result; 
 }
 
 

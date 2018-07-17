@@ -24,6 +24,8 @@
 
 int main(int argc, char *argv[])
 {
+	char *id;
+
   printf("initialize keyspace and table\n");
 	keyspace_table_init(KEYSPACE, TABLE);
 
@@ -33,10 +35,15 @@ int main(int argc, char *argv[])
 	printf("add_user(713717, 'rowen', '1.2.3.4')\n");
 	add_user(713717, "rowen", "1.2.3.4");
 	
+	printf("add_user(1435, 'ricker', '140.233.20.181')\n");
+	add_user(1435, "ricker", "140.233.20.181");
+
 	printf("get_user_ip_by_username(KEYSPACE, TABLE, 'rowen')\n");
 	get_user_ip_by_username(KEYSPACE, TABLE, "rowen");
 
 	printf("get_user_ip_by_id(KEYSPACE, TABLE, 713717)\n");
-	get_user_ip_by_id(KEYSPACE, TABLE, 713717);
+	id = get_user_ip_by_id(KEYSPACE, TABLE, 713717);
+	printf("id = %s\n", id);
+	free(id);
 	return 0;
 }

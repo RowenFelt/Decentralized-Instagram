@@ -43,6 +43,7 @@ int insert_dispatch(struct dispatch *dis);
 int create_dispatch(void);
 int delete_dispatch(uint64_t dispatch_id);
 int search_dispatch_by_id(uint64_t dispatch_id);
+int search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int size);
 int search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children);
 int parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch);
 void dispatch_heap_cleanup(struct dispatch *dis);
