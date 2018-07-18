@@ -42,9 +42,12 @@ struct dispatch_parent {
 int insert_dispatch(struct dispatch *dis);
 int create_dispatch(void);
 int delete_dispatch(uint64_t dispatch_id);
+//Search methods take a buffer pointer and buffer size. The buffer must be malloc'ed and 
+//free'd at the server level (insta_server.c), but they are "filled" by these search methods
 int search_dispatch_by_id(uint64_t dispatch_id);
 int search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int size);
-int search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children);
+char* search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children, int *result);
+
 int parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch);
 void dispatch_heap_cleanup(struct dispatch *dis);
 int print_dispatch_struct(struct dispatch *dis);
