@@ -37,7 +37,8 @@ int main(int argc, char *argv[])
 	
 	printf("add_user(1435, 'ricker', '140.233.20.181')\n");
 	add_user(1435, "ricker", "140.233.20.181");
-
+	add_user(1485, "ellen", "140.233.20.153");
+	
 	printf("get_user_ip_by_username(KEYSPACE, TABLE, 'rowen')\n");
 	get_user_ip_by_username(KEYSPACE, TABLE, "rowen");
 
