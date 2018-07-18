@@ -263,6 +263,44 @@ main(int argc, char* argv[])
 	free(body);
 	free(parent);
 
+	/* 8 - dispatch with identical audience */
+ 
+  dis = malloc(sizeof(struct dispatch));
+  body = malloc(sizeof( struct dispatch_body));
+  parent = malloc(sizeof(struct dispatch_parent));
+
+
+  body->media_path = "/home/cboswell/Desktop/brooding.jpg";
+  body->text = "dudes who brood aren't rude, just misunderstude";
+  dis->body = body;
+
+  dis->user_id = 1000;
+  dis->timestamp = time(NULL);
+  dis->audience_size = 2;
+  dis->audience[0] = 4;
+  dis->audience[1] = 19;
+
+  dis->num_tags = 2;
+
+  strcpy(dis->tags[0], "angstyteen");
+  strcpy(dis->tags[1], "antiaesthetic");
+
+  dis->num_user_tags = 0;
+
+  parent->type = 0;
+  parent->id = 1234;
+  dis->parent = parent;
+
+  dis->fragmentation = 5;
+  dis->dispatch_id = 14351614;
+
+  insert_dispatch(dis);
+
+  free(dis);
+  free(body);
+  free(parent);
+
+
 	/* there should only be a total of 6 dispatches inserted */
 	
 	/* search by parent's dispatch id */
