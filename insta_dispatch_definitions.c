@@ -310,7 +310,9 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children, int *result
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 	
 	*result = 0;		
-
+	if(num_children == -1){
+		num_children = INT_MAX;
+	}
 	while(mongoc_cursor_next(cursor, &result_dispatch) && *result < num_children){
 		char *json_str;
 		json_str = bson_as_json(result_dispatch, &json_length);

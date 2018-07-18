@@ -33,10 +33,8 @@
 int
 parse_client_command(char *command){	
 	int result;
-printf("command recieved: '%s'\n", command);	
 	
 	if(memcmp(command, "pull all ", 9) == 0){
-puts("pull all");
 		uint64_t user_id;
 		user_id = strtoll((command + 9), NULL, 10); //Assuming base 10
 		//checking for possible over or underflow, or no valid integer as a string was found,
@@ -51,20 +49,17 @@ printf("user id: %ld\n", user_id);
 	
 			
 	else if(memcmp(command, "pull child ", 11) == 0){
-puts("pull child");
 		uint64_t parent_id;
 		parent_id = strtoll((command + 11), NULL, 10);
 		if(parent_id == LLONG_MIN || parent_id == LLONG_MAX || parent_id == 0 ){
 			perror("Invalid arguments for pull child: ");
 			return -1;
 		}
-printf("parent id: %ld\n",parent_id);
 		result = pull_child(parent_id);
 	}
 	
 
 	else if(memcmp(command, "pull one ", 9) == 0){
-puts("pull one");
 		char* endptr;
 		uint64_t user_id, dispatch_id;
 		user_id = strtoll((command + 9), &endptr, 10);
@@ -77,29 +72,26 @@ puts("pull one");
 			perror("Invalid arguments: ");
 			return -1;
 		}
-printf("user id: %ld, dispatch_id: %ld\n", user_id, dispatch_id);
 		result = pull_one(user_id, dispatch_id);
 	}
 
 
 	else if(memcmp(command, "pull user ", 10) == 0){
-puts("pull user");
 		uint64_t user_id;
 		user_id = strtoll((command + 10), NULL, 10);
 		if(user_id == LLONG_MIN || user_id == LLONG_MAX || user_id == 0 ){
 			perror("Invalid arguments for pull user: ");
 			return -1;
 		}
-printf("user id: %ld\n", user_id);
 		result = pull_user(user_id);
 	}
 
 
 	else if(memcmp(command, "pull search ", 12) == 0){
-puts("pull search");
-		char *field, *query;
-		char *saveptr;
-		if((field = strtok_r((command + 12), " ", &saveptr))  == NULL){
+		char *field, *query, *str;
+		command+= 12;
+		str = strdup(command);
+		if((field = strtok(str, " "))  == NULL){
 			printf("Invalid argument for pull search\n");
 			return -1;
 		}
@@ -108,14 +100,12 @@ puts("pull search");
 			printf("Invalid value for field\n");
 			return -1;
 		}
-		
 		//currently not preforming any checking to see if this is somehow a nefarious 
 		//chunk of data, and strtok don't really provide any robust support in this regard.
-		if((query = strtok_r(NULL, " ", &saveptr))  == NULL){
+		if((query = strtok(NULL, " "))  == NULL){
 			printf("Invalid argument for pull search\n");
 			return -1;
 		}
-printf("field: %s, query: %s\n", field, query);			
 		result =	pull_search(field, query);
 	}
 
@@ -128,7 +118,14 @@ printf("field: %s, query: %s\n", field, query);
  */
 int
 pull_all(uint64_t user_id){
-	return 0;
+	char *bson;
+	int result = 0;
+	bson = search_dispatch_by_user_audience(user_id, NULL, 0, -1, result);
+	if(bson == NULL){
+		printf("search_dispatch_by_user_audience failed\n");
+		return -1;
+	}
+	return result;
 }
 
 
@@ -139,7 +136,14 @@ pull_all(uint64_t user_id){
  */
 int
 pull_child(uint64_t parent_id){
-	
+	char *bson;
+	int result = 0;
+	bson = search_dispatch_by_parent_id(parent_id, -1, &result);
+	if(bson == NULL){
+		printf("search_dispatch_by_parent_id failed\n");
+		return -1;
+	}
+	printf("bson = \n%s\n", bson);	
 	return 0;
 }
 
