@@ -264,17 +264,18 @@ search_dispatch_by_id(uint64_t dispatch_id)
 }
 
 
-int
-search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
+char *
+search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children, int *result)// char* buf, int buf_size)
 {
 	struct dispatch dis;
   bson_t *target_dispatch;  
 	bson_t child;
 	const bson_t *result_dispatch;
   mongoc_cursor_t *cursor;
-	int i = 0;  
-	int result = 0;
-	
+	size_t json_length;
+	int buf_size = 0;
+	char *buf = malloc(1);
+		
 	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
 
@@ -290,19 +291,29 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children)
 
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 	
-	while(mongoc_cursor_next(cursor, &result_dispatch) && i < num_children){
-		result+=1;
+	while(mongoc_cursor_next(cursor, &result_dispatch) && num_children){
+		/* Temporary for debugging */
 		parse_dispatch_bson(&dis, result_dispatch);
 		print_dispatch_struct(&dis);	
 		dispatch_heap_cleanup(&dis);
-		i++;
+		/* ------------------------ */
+		char *json_str;
+
+		json_str = bson_as_json(result_dispatch, &json_length);
+		printf("Result #%d with json_size: %ld\n",*result, json_length);
+		printf("	%s\n", json_str);
+		buf_size += json_length;
+		buf = realloc(buf, buf_size);		
+		//Copy json_str to buf, starting at the "unused" portion of what we just realloc'ed
+		strncpy(buf + buf_size - json_length, json_str, json_length);  
+		result += 1;
 	}
 
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
 	bson_destroy(&child);
 	
-	return result; 
+	return buf; 
 }
 
 
