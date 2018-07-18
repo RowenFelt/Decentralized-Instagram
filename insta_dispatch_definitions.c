@@ -224,13 +224,15 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int audie
 	*result = 0;
 
 	while(mongoc_cursor_next(cursor, &result_dispatch) && *result < num_dispatches){
-		printf("found result #%d", *result);
+printf("found result #%d\n", *result);
 		char *json_str;
     json_str = bson_as_json(result_dispatch, &json_length);
     buf_size += json_length;
+printf("buf_size: %d\n", buf_size);
     buf = realloc(buf, buf_size);   
     //Copy json_str to buf, starting at the "unused" portion of what we just realloc'ed
     strncpy(buf + buf_size - json_length, json_str, json_length);
+		printf("buf: %s\n", buf);
 		*result += 1;
 	}
 

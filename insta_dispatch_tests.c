@@ -69,8 +69,8 @@ main(int argc, char* argv[])
 	body = malloc(sizeof( struct dispatch_body));
 	parent = malloc(sizeof(struct dispatch_parent));
 
-	body->media_path = "/home/cboswell/Desktop/cat.jpg";
-	body->text = "Cat";
+	body->media_path = "/home/cboswell/Desktop/doOOOOOOg.jpg";
+	body->text = "Dog";
 	dis->body = body;
 
 	dis->user_id = 1234;
@@ -80,7 +80,7 @@ main(int argc, char* argv[])
 	dis->num_tags = 3;	
 
 	strcpy(dis->tags[0], "cute");
-	strcpy(dis->tags[1], "lolcats");
+	strcpy(dis->tags[1], "loldogs");
 	strcpy(dis->tags[2], "wow");
 	
 	dis->num_user_tags = 4;
@@ -95,7 +95,7 @@ main(int argc, char* argv[])
 	dis->parent = parent;
 
 	dis->fragmentation = 5;
-	dis->dispatch_id = 6666;
+	dis->dispatch_id = 6667;
 
 	insert_dispatch(dis);
 
@@ -243,8 +243,8 @@ main(int argc, char* argv[])
 	free(buf);
 
 	printf("\n\nSEARCH FOR DISPATCH BY USER AND AUDIENCE\n");
-	search_dispatch_by_user_audience(1234, NULL, 0, 4, &result);
-	printf("\n\nLooking for dispatches from user 1234 with public audience (0). The contents of buf are:\n%s", buf);
+	buf = search_dispatch_by_user_audience(1234, NULL, 0, 4, &result);
+	printf("\n\nLooking for dispatches from user 1234 with public audience (0). The contents of buf are:\n%s\n", buf);
 		
 }
 
