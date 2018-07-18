@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
     int rc;
     int n;
 
+		/* dest_user is user_id of user */
     dest_user = argv[1];
     dest_port = argv[2];
 
