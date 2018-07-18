@@ -120,7 +120,7 @@ int
 pull_all(uint64_t user_id){
 	char *bson;
 	int result = 0;
-	bson = search_dispatch_by_user_audience(user_id, NULL, 0, -1, result);
+	bson = search_dispatch_by_user_audience(user_id, NULL, 0, -1, &result);
 	if(bson == NULL){
 		printf("search_dispatch_by_user_audience failed\n");
 		return -1;
@@ -155,6 +155,7 @@ pull_child(uint64_t parent_id){
  */
 int
 pull_one(uint64_t user_id, uint64_t dispatch_id){
+	
 	return 0;
 }
 

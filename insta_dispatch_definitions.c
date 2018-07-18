@@ -29,7 +29,7 @@ insert_dispatch(struct dispatch *dis) {
   bson_t *dispatch; 
   bson_t child;    
 	bson_error_t error;
-
+	char buf[10];
 	time_t rawtimestamp;
 
   struct mongo_user_connection cn;
@@ -71,10 +71,10 @@ insert_dispatch(struct dispatch *dis) {
 		return -1;
 	}	
   BSON_APPEND_ARRAY_BEGIN(dispatch, "audience", &child);
-	if(dis->audience_size > 0){
-		for (uint32_t i = 0; i < dis->audience_size; i++){
-			BSON_APPEND_INT64(&child, "audience", dis->audience[i]);
-		}
+	for (int i = 0; i < dis->audience_size; i++){
+		memset(buf, '\0', 10);
+		sprintf(buf, "%d", i);
+		BSON_APPEND_INT64(&child, buf, dis->audience[i]);
 	}
 	bson_append_array_end(dispatch, &child);
 
@@ -86,10 +86,10 @@ insert_dispatch(struct dispatch *dis) {
 		return -1;
 	}
 	BSON_APPEND_ARRAY_BEGIN(dispatch, "tags", &child);
-	if (dis->num_tags > 0){
-		for (uint32_t i = 0; i < dis->num_tags; i++){
-			BSON_APPEND_UTF8(&child, "tags", dis->tags[i]);
-		}
+	for (int i = 0; i < dis->num_tags; i++){
+		memset(buf, '\0', 10);
+		sprintf(buf, "%d", i);
+		BSON_APPEND_UTF8(&child, buf, dis->tags[i]);
 	}
 	bson_append_array_end(dispatch, &child);
 
@@ -102,10 +102,10 @@ insert_dispatch(struct dispatch *dis) {
 		return -1;
 	}	
 	BSON_APPEND_ARRAY_BEGIN(dispatch, "user_tags", &child);
-	if(dis->num_user_tags > 0){
-		for (uint32_t i = 0; i < dis->num_user_tags; i++){
-			BSON_APPEND_INT64(&child, "user_tags", dis->user_tags[i]);
-		}
+	for (int i = 0; i < dis->num_user_tags; i++){
+		memset(buf, '\0', 10);
+		sprintf(buf, "%d", i);
+		BSON_APPEND_INT64(&child, buf, dis->user_tags[i]);
 	}
 	bson_append_array_end(dispatch, &child);
 
@@ -117,12 +117,6 @@ insert_dispatch(struct dispatch *dis) {
 
   BSON_APPEND_INT32(dispatch, "fragmentation", dis->fragmentation);
   BSON_APPEND_INT64(dispatch, "dispatch_id", dis->dispatch_id);
-
-  /* Printing the document as a JSON string for error checking */
-/*  str = bson_as_canonical_extended_json(dispatch, NULL);
-  printf("%s\n", str);
-  bson_free(str);
-*/
 
   if (!mongoc_collection_insert_one (cn.collection, dispatch, NULL, NULL, &error)) {
      fprintf (stderr, "%s\n", error.message);
@@ -217,22 +211,25 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int audie
 		  BSON_APPEND_INT64(&child, query_buffer, audience[i]);
 		}
 		bson_append_array_end (target_dispatch, &child);
+		char *json = bson_as_json(target_dispatch, NULL);
+		printf("\n\n The bson query for user with audience is %s\n", json);
+		bson_free(json); 
 	}
 
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 
 	*result = 0;
-
+	if(num_dispatches == -1){
+		num_dispatches = INT_MAX;
+	}
 	while(mongoc_cursor_next(cursor, &result_dispatch) && *result < num_dispatches){
 printf("found result #%d\n", *result);
 		char *json_str;
     json_str = bson_as_json(result_dispatch, &json_length);
     buf_size += json_length;
-printf("buf_size: %d\n", buf_size);
     buf = realloc(buf, buf_size);   
     //Copy json_str to buf, starting at the "unused" portion of what we just realloc'ed
     strncpy(buf + buf_size - json_length, json_str, json_length);
-		printf("buf: %s\n", buf);
 		*result += 1;
 	}
 
