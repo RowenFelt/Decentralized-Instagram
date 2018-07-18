@@ -1,5 +1,5 @@
 /*
- * insta_server.c
+ * network_protocols.c
  * text-based protocals for server based insta functions
  * Authors: Rowen Felt and Campbell Boswell
  */
@@ -16,26 +16,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
-#include "insta_dispatch_definitions.h"
+#include "network_protocols.h"
 #include "insta_user_definitions.h"
-
-int parse_client_command(char *command);
-int pull_all(uint64_t user_id);
-int pull_child(uint64_t parent_id);
-int pull_one(uint64_t user_id, uint64_t dispatch_id);
-int pull_user(uint64_t user_id);
-int pull_search(char *field, char* query);
-
-int
-main(int argc, char* argv[]){
-	if(argc != 2){
-		printf("invalid number of agument");
-		return -1;	
-	}
-	char *command = argv[1];
-	parse_client_command(command);
-}
-
+#include "insta_dispatch_definitions.h"
 
 
 /*
