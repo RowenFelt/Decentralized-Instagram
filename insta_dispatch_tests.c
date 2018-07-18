@@ -63,6 +63,46 @@ main(int argc, char* argv[])
 	free(body);
 	free(parent);
 	
+
+	/* 2nd dispatch from user 1234 */		
+	dis = malloc(sizeof(struct dispatch));
+	body = malloc(sizeof( struct dispatch_body));
+	parent = malloc(sizeof(struct dispatch_parent));
+
+	body->media_path = "/home/cboswell/Desktop/cat.jpg";
+	body->text = "Cat";
+	dis->body = body;
+
+	dis->user_id = 1234;
+	dis->timestamp = time(NULL);
+	dis->audience_size = 0;
+
+	dis->num_tags = 3;	
+
+	strcpy(dis->tags[0], "cute");
+	strcpy(dis->tags[1], "lolcats");
+	strcpy(dis->tags[2], "wow");
+	
+	dis->num_user_tags = 4;
+
+	dis->user_tags[0] = 1;	
+	dis->user_tags[1] = 2;
+	dis->user_tags[2] = 3;
+	dis->user_tags[3] = 4;
+	
+	parent->type = 0;
+	parent->id = 1234;
+	dis->parent = parent;
+
+	dis->fragmentation = 5;
+	dis->dispatch_id = 6666;
+
+	insert_dispatch(dis);
+
+	free(dis);
+	free(body);
+	free(parent);
+	
 	/* 1 - dispach with shared parent id */
 	dis = malloc(sizeof(struct dispatch));
 	body = malloc(sizeof( struct dispatch_body));
@@ -154,13 +194,57 @@ main(int argc, char* argv[])
 	free(body);
 	free(parent);
 	
+	/* "4" - dispatch is a duplicate of dispatch 3, and should not be inerted*/
+
+	dis = malloc(sizeof(struct dispatch));
+	body = malloc(sizeof( struct dispatch_body));
+	parent = malloc(sizeof(struct dispatch_parent));
+	
+	body->media_path = "comment:";
+	body->text = "wow, great picture";
+	dis->body = body;
+
+	dis->user_id = 4;
+	dis->timestamp = time(NULL);
+	dis->audience_size = 0;
+
+	dis->num_tags = 0;	
+	
+	dis->num_user_tags = 0;
+	
+	parent->type = 1;
+	parent->id = 6666;
+	dis->parent = parent;
+
+	dis->fragmentation = 5;
+	dis->dispatch_id = 3;
+
+	insert_dispatch(dis);
+	free(dis);
+	free(body);
+	free(parent);
+
 	/* search by parent's dispatch id */
 	int result;
-	printf("\n\nsearch dispatch by parent_id\n\n");
+
+	printf("\n\nSEARCH FOR DISPATCH BY PARENT ID\n");
 	char *buf = search_dispatch_by_parent_id( 6666, 4, &result);		
-	printf("there were %d results", result);
-	printf("\n\nThe contents of buf are:\n%s", buf);	
-	printf("\n\nsearch dispatch by user audience\n\n");
-	search_dispatch_by_user_audience(1234, NULL, 0);
+	printf("\nthere were %d results. ", result);
+	printf("The contents of buf are:\n%s", buf);	
+	free(buf);
+
+	printf("\n\nSEARCH FOR DISPATCH BY ID\n");
+	buf = search_dispatch_by_id(1, &result);
+	printf("\n\nThe dispatch id is 1\nThe contents of buf are:\n%s", buf);	
+	free(buf);	
+
+	buf = search_dispatch_by_id(20, &result);
+	printf("\n\nThe dispatch id is 20 The contents of buf are:\n%s", buf);	
+	free(buf);
+
+	printf("\n\nSEARCH FOR DISPATCH BY USER AND AUDIENCE\n");
+	search_dispatch_by_user_audience(1234, NULL, 0, 4, &result);
+	printf("\n\nLooking for dispatches from user 1234 with public audience (0). The contents of buf are:\n%s", buf);
+		
 }
 
