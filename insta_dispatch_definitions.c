@@ -211,7 +211,7 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
 	char *buf = build_json(cursor, req_num, result);
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
-	
+	mongo_user_teardown(&cn);	
 	return buf; 
 }
 
@@ -247,7 +247,7 @@ search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result){
 	char* buf = build_json(cursor, req_num, result);	 
   mongoc_cursor_destroy(cursor);
   bson_destroy(target_dispatch);
-  
+  mongo_user_teardown(&cn);
   return buf;
 }
 
@@ -291,8 +291,58 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
 	bson_destroy(&child);
-	
+	mongo_user_teardown(&cn);
 	return buf; 
+}
+
+char *
+search_dispatch_by_tags(const char* query, int req_num, int *result){
+	bson_t *target_dispatch;
+	mongoc_cursor_t *cursor;
+	
+	struct mongo_user_connection cn;
+	cn.uri_string = "mongodb://localhost:27017";	
+
+	mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+
+	target_dispatch = bson_new();
+
+  BSON_APPEND_UTF8(target_dispatch, "tags", query);
+	
+	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
+	*result = 0;
+	char *buf = build_json(cursor, req_num, result);
+
+	mongoc_cursor_destroy(cursor);
+	bson_destroy(target_dispatch);
+	mongo_user_teardown(&cn);
+	return buf;
+
+}
+
+char *
+search_dispatch_by_user_tags(uint64_t query, int req_num, int *result){
+  bson_t *target_dispatch;
+  mongoc_cursor_t *cursor;
+
+  struct mongo_user_connection cn;
+  cn.uri_string = "mongodb://localhost:27017";
+
+  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+
+  target_dispatch = bson_new();
+
+  BSON_APPEND_INT64(target_dispatch, "user_tags", query);
+  
+  cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
+  *result = 0;
+  char *buf = build_json(cursor, req_num, result);
+
+  mongoc_cursor_destroy(cursor);
+  bson_destroy(target_dispatch);
+  mongo_user_teardown(&cn);
+  return buf;
+
 }
 
 
