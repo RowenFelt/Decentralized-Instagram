@@ -158,7 +158,6 @@ insert_user(struct user *new_user)
 	// -1 is interperated as INT_MAX, and we want an exhaustive search for duplicates
 	search_user_by_id_mongo(new_user->user_id, -1, &n); 
 	if(n > 0) {
-		printf("user with user_id %ld already exists in table\n", new_user->user_id);
 		return -1;
 	}
 		
@@ -208,7 +207,6 @@ insert_user(struct user *new_user)
 		fprintf (stderr, "%s\n", cn.error.message);
   }
 
-	printf("insert successful\n");	
 	bson_destroy (doc);
 	bson_destroy (&child);
   bson_destroy (&second_child);
@@ -238,9 +236,6 @@ delete_user(uint64_t user_id)
   if(!n){
 		fprintf (stderr, "An error occurred: %s\n", error.message);
 		return error.code;
-	}
-	else{
-		printf("user_id %ld deleted\n", user_id);
 	}
 	bson_iter_init(&iterator, &reply); 
 	if(bson_iter_find(&iterator, "deletedCount")){
