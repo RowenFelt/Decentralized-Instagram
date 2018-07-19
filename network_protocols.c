@@ -86,28 +86,28 @@ parse_client_command(char *command){
 	}
 
 
-	else if(memcmp(command, "pull search ", 12) == 0){
-		char *field, *query, *str;
-		command+= 12;
+	else if(memcmp(command, "pull tags ", 10) == 0){
+		char *query, *str;
+		command+= 10;
 		str = strdup(command);
-		if((field = strtok(str, " "))  == NULL){
+		if((query = strtok(str, " "))  == NULL){
 			printf("Invalid argument for pull search\n");
 			return -1;
 		}
-		//check that the pointer field references a valid field ("user_tags" or "tags")
-		if(memcmp(field, "user_tags", 9) != 0 && memcmp(field, "tags", 4) != 0){
-			printf("Invalid value for field\n");
-			return -1;
-		}
-		//currently not preforming any checking to see if this is somehow a nefarious 
-		//chunk of data, and strtok don't really provide any robust support in this regard.
-		if((query = strtok(NULL, " "))  == NULL){
-			printf("Invalid argument for pull search\n");
-			return -1;
-		}
-		result =	pull_search(field, query);
+	
+		result =	pull_tags(query);
 	}
 
+	else if(memcmp(command, "pull user_tags ", 15) == 0){
+		uint64_t user_id;
+		command+= 15;
+		user_id = strtoll((command), NULL, 10);
+    if(user_id == LLONG_MIN || user_id == LLONG_MAX || user_id == 0 ){
+      perror("Invalid arguments for pull user: ");
+      return -1;
+    }
+		result =	pull_user_tags(user_id);
+	}
 	return result;
 }
 
@@ -186,14 +186,32 @@ pull_user(uint64_t user_id){
 
 /*
  * Queries the mongo dispatch collection for a dispatch (or multiple dispatches), which 
- * have a value that matches query, and which is stored in the 'column'/has the key pair
- * referenced by field. 
+ * include user_id in the user_tags array
  */
 int
-pull_search(char *field, char* query){
+pull_user_tags(uint64_t user_id){
+	char *bson;
+	int result = 0;
+	bson = search_dispatch_by_user_tags(user_id, -1, &result);	
+	if(bson == NULL){
+		printf("PULL USER TAGS failed, search function returned NULL\n");
+		return -1;
+	}
 	return 0;
 }
 
-
-
-
+/*
+ * Queries the mongo dispatch collection for a dispatch (or multiple dispatches), which 
+ * include string query in the tags array
+ */
+int
+pull_tags(const char *query){
+	char *bson;
+	int result = 0;
+	bson = search_dispatch_by_tags(query, -1, &result);	
+	if(bson == NULL){
+		printf("PULL TAGS failed, search function returned NULL\n");
+		return -1;
+	}
+	return 0;
+}
