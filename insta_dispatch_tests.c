@@ -234,11 +234,11 @@ main(int argc, char* argv[])
 	free(buf);
 
 	printf("\n\nSEARCH FOR DISPATCH BY ID\n");
-	buf = search_dispatch_by_id(1, &result);
+	buf = search_dispatch_by_id(1, 1, &result);
 	printf("\n\nThe dispatch id is 1\nThe contents of buf are:\n%s", buf);	
 	free(buf);	
 
-	buf = search_dispatch_by_id(20, &result);
+	buf = search_dispatch_by_id(20, 100000000, &result);
 	printf("\n\nThe dispatch id is 20 The contents of buf are:\n%s", buf);	
 	free(buf);
 
