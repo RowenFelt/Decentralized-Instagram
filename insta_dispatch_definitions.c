@@ -42,7 +42,6 @@ insert_dispatch(struct dispatch *dis) {
 	int duplicate = 1; 
 	search_dispatch_by_id(dis->dispatch_id, &duplicate); 
 	if(duplicate > 0){
-		printf("dispatch already in database\n");
 		return -1;
 	}
   dispatch = bson_new();
@@ -161,10 +160,6 @@ delete_dispatch(uint64_t dispatch_id)
 		return -1;
 	}
 
-/* printing as json for debugging
-	str = bson_as_canonical_extended_json(&reply, NULL);
-	printf("%s\n", str);
-*/
 	bson_destroy(target_dispatch);
 	bson_destroy(&reply);
 	
@@ -211,9 +206,6 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int audie
 		  BSON_APPEND_INT64(&child, query_buffer, audience[i]);
 		}
 		bson_append_array_end (target_dispatch, &child);
-		char *json = bson_as_json(target_dispatch, NULL);
-		printf("\n\n The bson query for user with audience is %s\n", json);
-		bson_free(json); 
 	}
 
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
@@ -223,12 +215,10 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int audie
 		num_dispatches = INT_MAX;
 	}
 	while(mongoc_cursor_next(cursor, &result_dispatch) && *result < num_dispatches){
-printf("found result #%d\n", *result);
 		char *json_str;
     json_str = bson_as_json(result_dispatch, &json_length);
     buf_size += json_length;
     buf = realloc(buf, buf_size);   
-    //Copy json_str to buf, starting at the "unused" portion of what we just realloc'ed
     strncpy(buf + buf_size - json_length, json_str, json_length);
 		*result += 1;
 	}

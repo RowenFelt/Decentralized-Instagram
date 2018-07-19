@@ -306,38 +306,45 @@ main(int argc, char* argv[])
 	/* search by parent's dispatch id */
 	int result;
 
-	printf("\n\nSEARCH FOR DISPATCH BY PARENT ID\n");
 	char *buf = search_dispatch_by_parent_id( 6666, 4, &result);		
-	printf("\nthere were %d results. ", result);
-	printf("The contents of buf are:\n%s", buf);	
+	if(strlen(buf) != 1130 || result != 3){
+		printf("TEST FAILED: search_dispatch_by_parent_id( 6666, 4, &result)\n");
+	}
 	free(buf);
 
-	printf("\n\nSEARCH FOR DISPATCH BY ID\n");
 	buf = search_dispatch_by_id(1, &result);
-	printf("\n\nThe dispatch id is 1\nThe contents of buf are:\n%s", buf);	
+	if(strlen(buf) != 375 || result != 1){
+		printf("TEST FAILED: search_dispatch_by_id(1, &result)\n");
+	}
 	free(buf);	
 
 	buf = search_dispatch_by_id(20, &result);
-	printf("\n\nThe dispatch id is 20 The contents of buf are:\n%s", buf);	
+	if(buf != NULL || result != 0){
+		printf("TEST FAILED: search_dispatch_by_id(20, &result)\n");
+	}
 	free(buf);
 
-	printf("\n\nSEARCH FOR DISPATCH BY USER AND NO AUDIENCE\n");
 	buf = search_dispatch_by_user_audience(1234, NULL, 0, 4, &result);
-	printf("\n\nLooking for dispatches from user 1234 with public audience (0). The contents of buf are:\n%s\n", buf);
+	if(strlen(buf) != 862 || result != 2){
+		printf("TEST FAILED: search_dispatch_by_user_audience(1234, NULL, O, 4, &result);\n"); 
+	}
 	free(buf);
 
-	printf("\n\nSEARCH FOR DISPATCH BY USER WITH AUDIENCE\n");
 	uint64_t aud[] = {4, 19};
 	buf = search_dispatch_by_user_audience(1234, aud, 2, -1, &result);
-	printf("\n\n Searching for user 1234 with public audience [4,19]. The contents of buf are: \n%s\n", buf);  		
+	if(strlen(buf) != 434 || result != 1){
+		printf("TEST FAILED: search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n");
+	}
+	free(buf);
 	
 	/* delete dispatches */
-	// delete_dispatch(6969);
+	delete_dispatch(6969);
 	delete_dispatch(6666);
 	delete_dispatch(3);
-	//delete_dispatch(2);
+	delete_dispatch(2);
 	delete_dispatch(1);
 	delete_dispatch(6667);
+	delete_dispatch(14351614);
 }
 
 
