@@ -31,6 +31,7 @@ build_json(mongoc_cursor_t *cursor, int req_num, int *result){
 	const bson_t *result_dispatch;
 	size_t json_length;	
 	int buf_size;
+	bson_error_t error;
 	char* buf = NULL;	
   
 	buf_size = 0;
@@ -48,6 +49,10 @@ build_json(mongoc_cursor_t *cursor, int req_num, int *result){
     strncpy(buf + buf_size - json_length, json_str, json_length);
     *result += 1;
   }
+
+	if(mongoc_cursor_error(cursor, &error)){
+		fprintf(stderr, "Failed to itterate through all documents: %s\n", error.message);
+	}
 
 	return buf;
 

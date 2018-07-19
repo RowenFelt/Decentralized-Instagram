@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 	struct insta_relations pj_followers;
 	struct insta_relations pj_following;
 	pj.user_id = 159178;
-	pj.username = "pjonhson";
+	pj.username = "pjohnson";
 	pj.image_path = "/images/pjohnson_image/fake_path";
 	pj_pd.name = "Pete Johnson";
 	pj.bio = &pj_pd;
@@ -76,39 +76,90 @@ int main(int argc, char *argv[])
 	pj_following.user_ids = pj_following_ids;
 	pj.following = &pj_following;
 	
+	struct user pj_imposter;
+	struct personal_data pj_imposter_pd;
+	struct insta_relations pj_imposter_followers;
+	struct insta_relations pj_imposter_following;
+	pj_imposter.user_id = 159179;
+	pj_imposter.username = "pjohnson_imposter";
+	pj_imposter.image_path = "/images/pjohnson_image/fake_path";
+	pj_imposter_pd.name = "Pete Johnson";
+	pj_imposter.bio = &pj_imposter_pd;
+	pj_imposter.fragmentation = 0;
+	pj_imposter_followers.direction = 0;
+	pj_imposter_followers.count = 2;
+	uint64_t pj_imposter_follower_ids[2] = {16, 88};
+	pj_imposter_followers.user_ids = pj_imposter_follower_ids;
+	pj_imposter.followers = &pj_imposter_followers;
+	pj_imposter_following.direction = 1;
+	pj_imposter_following.count = 9;
+	uint64_t pj_imposter_following_ids[9] = {66666, 64, 346, 15235, 2356, 6, 2, 3, 99};
+	pj_imposter_following.user_ids = pj_imposter_following_ids;
+	pj_imposter.following = &pj_imposter_following;
+	
 	/* test insert_user */
 	int result, req_num;
 	char *buf;
 
-	req_num = 1; //The number of results requested in queries
+	req_num = -1; //The number of results requested in queries
 
-	printf("inserting user, %s\n", cb.username);
-	insert_user(&cb);
-	printf("searching for user %s\n", cb.username);
-	buf = search_user_by_name_mongo("cboswell", req_num, &result);
-	printf("user with name %s has user info (as raw JSON):\n%s\n", "cboswell", buf);
-	printf("search for user with id %d\n", 12345);
-	buf = search_user_by_id_mongo(12345, req_num, &result);
-	printf("user with id %d has user info (as raw JSON):\n%s\n", 12345, buf);
-	printf("delete user with id %d\n", 12345);
-	delete_user(12345);
-	printf("search for user with id %d, should show nothing there\n", 12345);
-  search_user_by_id_cass(12345);
-	insert_user(&rf);
-	insert_user(&pj);
+	/* test insert_user */
+	insert_user(&cb); //User object has expected strlen of 457 as json
+	insert_user(&rf); //User object has expected strlen of 453 as json
+	insert_user(&pj); //User object has expected strlen of 478 as json
+	insert_user(&pj_imposter);		//has expected strlen of 486 as json	
 
 	/* test search_user */
-	printf("search_user('rfelt', INSTA_FOLLOWER);\n");
+	buf = search_user_by_name_mongo("cboswell", req_num, &result);
+	if(strlen(buf) != 457 || result != 1){
+		printf("TEST FAILED: search_for_user_by_name_mongo('cboswell', req_num, &result)\n");
+	}
+	
+	buf = search_user_by_id_mongo(12345, req_num, &result);
+	if(strlen(buf) != 457 || result != 1){
+		printf("TEST FAILED: search_for_user_by_id_mongo(12345, req_num, &result)\n");
+	}
+	
+	if(delete_user(12345) != 1){
+		printf("TEST FAILED: delete_user(12345)\n");
+	}
+
+	buf = search_user_by_id_mongo(12345, req_num, &result);
+	if(buf != NULL || result != 0){
+		printf("TEST FAILED: user should not exist\n");
+	}
+
 	buf = search_user_by_name_mongo("rfelt", req_num, &result);
-	printf("user with id %s has user info (as raw JSON):\n%s\n", "rfelt", buf);
-	printf("search_user('Rowen Felt', INSTA_FOLLOWEE);\n");
+	if(strlen(buf) != 453 || result != 1){
+		printf("TEST FAILED: search_user_by_name_mongo('rfelt', req_num, &result)\n");
+	}
+	
 	buf = search_user_by_name_mongo("Rowen Felt", req_num, &result);
-	printf("user with name %s has user info (as raw JSON):\n%s\n", "Rowen Felt", buf);
-	printf("search_user('rowen', INSTA_UNKNOWN);\n");
-	search_user_by_name_cass("rowen");
-	printf("search_user('campbell', INSTA_UNKNOWN)\n");
-	search_user_by_name_cass("campbell");
-	printf("\n\n\n");		
+	if(strlen(buf) != 453 || result != 1){
+		printf("TEST FAILED: search_user_by_name_mongo('Rowen Felt', req_num, &result)\n");
+	}
+
+	buf = search_user_by_name_mongo("Pete Johnson", req_num, &result);
+	if(strlen(buf) != 965 || result != 2){
+		printf("TEST FAILED: search_user_by_name_mongo('Pete Johson', req_num, &result)\n");
+	}
+
+	buf = search_user_by_id_mongo(159179, req_num, &result);
+	if(strlen(buf) != 487 || result != 1){
+		printf("TEST FAILED: search_user_by_id_mongo(159179, req_num, &result)\n");
+	}
+	
+	buf = search_user_by_id_mongo(159178, req_num, &result);
+	if(strlen(buf) != 478 || result != 1){
+		printf("TEST FAILED: search_user_by_id_mongo(159178, req_num, &result)\n");
+	}
+	
+	//search_user_by_name_cass("rowen");
+	//search_user_by_name_cass("campbell");
+
+	delete_user(11254155);
+	delete_user(159178);
+	delete_user(159179);
 
 	return 0;
 }
