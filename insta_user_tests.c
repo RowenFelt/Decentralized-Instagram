@@ -77,12 +77,19 @@ int main(int argc, char *argv[])
 	pj.following = &pj_following;
 	
 	/* test insert_user */
+	int result, req_num;
+	char *buf;
+
+	req_num = 1; //The number of results requested in queries
+
 	printf("inserting user, %s\n", cb.username);
 	insert_user(&cb);
 	printf("searching for user %s\n", cb.username);
-	search_user_by_name_mongo("cboswell");
+	buf = search_user_by_name_mongo("cboswell", req_num, &result);
+	printf("user with name %s has user info (as raw JSON):\n%s\n", "cboswell", buf);
 	printf("search for user with id %d\n", 12345);
-	search_user_by_id_mongo(12345);
+	buf = search_user_by_id_mongo(12345, req_num, &result);
+	printf("user with id %d has user info (as raw JSON):\n%s\n", 12345, buf);
 	printf("delete user with id %d\n", 12345);
 	delete_user(12345);
 	printf("search for user with id %d, should show nothing there\n", 12345);
@@ -92,9 +99,11 @@ int main(int argc, char *argv[])
 
 	/* test search_user */
 	printf("search_user('rfelt', INSTA_FOLLOWER);\n");
-	search_user_by_name_mongo("rfelt");
+	buf = search_user_by_name_mongo("rfelt", req_num, &result);
+	printf("user with id %s has user info (as raw JSON):\n%s\n", "rfelt", buf);
 	printf("search_user('Rowen Felt', INSTA_FOLLOWEE);\n");
-	search_user_by_name_mongo("Rowen Felt");
+	buf = search_user_by_name_mongo("Rowen Felt", req_num, &result);
+	printf("user with name %s has user info (as raw JSON):\n%s\n", "Rowen Felt", buf);
 	printf("search_user('rowen', INSTA_UNKNOWN);\n");
 	search_user_by_name_cass("rowen");
 	printf("search_user('campbell', INSTA_UNKNOWN)\n");

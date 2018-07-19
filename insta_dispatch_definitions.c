@@ -18,6 +18,7 @@
 #include <time.h>
 #include "insta_mongo_connect.h"
 #include "insta_dispatch_definitions.h"
+#include "util.h"
 
 
 #define INSTA_DB "insta"
@@ -25,7 +26,11 @@
 
 int
 insert_dispatch(struct dispatch *dis) {
-
+/* 
+ * Takes a dispatch struct and inserts it in the collection 
+ * 'dispatch' (part of the 'insta' database).
+ * Returns 0 upon successful insertion, -1 otherwise.
+ */
   bson_t *dispatch; 
   bson_t child;    
 	bson_error_t error;
@@ -37,10 +42,11 @@ insert_dispatch(struct dispatch *dis) {
 
   mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	
-  //check if dis is a dupicate already stored in the the database (in which duplicate will 
-  //remain equal to 1
-	int duplicate = 1; 
-	search_dispatch_by_id(dis->dispatch_id, &duplicate); 
+  //check if dis is a dupicate already stored in the the database 
+  //(in which case duplicate will remain equal to 1)
+	int duplicate = 0;
+	int req_num = -1; 
+	search_dispatch_by_id(dis->dispatch_id, req_num, &duplicate); 
 	if(duplicate > 0){
 		return -1;
 	}
@@ -51,20 +57,15 @@ insert_dispatch(struct dispatch *dis) {
   BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path); //the path to dispatch media
   BSON_APPEND_UTF8(&child, "text", dis->body->text); //the text/caption for the dispatch
   bson_append_document_end(dispatch, &child);
-
-  BSON_APPEND_INT64(dispatch, "user_id", dis->user_id);
-
-  rawtimestamp = time(NULL);
+	BSON_APPEND_INT64(dispatch, "user_id", dis->user_id);
+	rawtimestamp = time(NULL);
 	if(rawtimestamp == (time(NULL) - 1)){
 		(void) fprintf(stderr, "Faulty current time\n");
 		exit(EXIT_FAILURE);
 	}
-	
   dis->timestamp = rawtimestamp;  
   BSON_APPEND_TIME_T(dispatch, "timestamp", dis->timestamp);
-
   BSON_APPEND_INT32(dispatch, "audience_size", dis->audience_size); //who sees dispatch
-
   /* Store specific audience for a group message */
   if (dis->audience_size > MAX_GROUP_SIZE){
 		return -1;
@@ -76,9 +77,6 @@ insert_dispatch(struct dispatch *dis) {
 		BSON_APPEND_INT64(&child, buf, dis->audience[i]);
 	}
 	bson_append_array_end(dispatch, &child);
-
-
-
   BSON_APPEND_INT32(dispatch, "num_tags", dis->num_tags);
 	/* Insert any hashtags as sub-array */
 	if(dis->num_tags > MAX_NUM_TAGS){
@@ -91,12 +89,8 @@ insert_dispatch(struct dispatch *dis) {
 		BSON_APPEND_UTF8(&child, buf, dis->tags[i]);
 	}
 	bson_append_array_end(dispatch, &child);
-
-
-
-  BSON_APPEND_INT32(dispatch, "num_user_tags", dis->num_user_tags);
-  
-	/* Insert any tagged users as sub-array */
+	BSON_APPEND_INT32(dispatch, "num_user_tags", dis->num_user_tags);
+  /* Insert any tagged users as sub-array */
 	if (dis->num_user_tags >	MAX_NUM_TAGS){
 		return -1;
 	}	
@@ -107,14 +101,12 @@ insert_dispatch(struct dispatch *dis) {
 		BSON_APPEND_INT64(&child, buf, dis->user_tags[i]);
 	}
 	bson_append_array_end(dispatch, &child);
-
-  /* Insert dispatch_parent struct w/ parent's id */
+	/* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "dispatch_parent", &child);
   BSON_APPEND_INT32(&child, "type", dis->parent->type);
   BSON_APPEND_INT64(&child, "id", dis->parent->id); 
   bson_append_document_end(dispatch, &child);
-
-  BSON_APPEND_INT32(dispatch, "fragmentation", dis->fragmentation);
+	BSON_APPEND_INT32(dispatch, "fragmentation", dis->fragmentation);
   BSON_APPEND_INT64(dispatch, "dispatch_id", dis->dispatch_id);
 
   if (!mongoc_collection_insert_one (cn.collection, dispatch, NULL, NULL, &error)) {
@@ -123,15 +115,11 @@ insert_dispatch(struct dispatch *dis) {
 
   /* clean up bson doc and collection */
   bson_destroy (dispatch);
-
 	return mongo_user_teardown(&cn);
-
-
 }
 
 int 
-create_dispatch(void)
-{
+create_dispatch(void){
 	//TODO
 	//Verify that audience_size, num_tags, the size of each tag (i.e. number of characters),
 	//and num_user_tags are all less than the defines constants
@@ -139,13 +127,15 @@ create_dispatch(void)
 }
 
 int 
-delete_dispatch(uint64_t dispatch_id)
-{
-	
+delete_dispatch(uint64_t dispatch_id){
+/* 
+ * Takes a dispatch id, queries the 'dispatch' collection for 
+ * a matching dispatch. If found, such a dispatch is deleted
+ * and 0 is returned. If not found and deleted, then -1 is returned
+ */
   bson_t *target_dispatch;  
 	bson_t reply;
 	bson_error_t error;
-//	char *str; for printing when debugging
 
   struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
@@ -159,7 +149,6 @@ delete_dispatch(uint64_t dispatch_id)
 		fprintf(stderr, "Delete failed: %s\n", error.message);
 		return -1;
 	}
-
 	bson_destroy(target_dispatch);
 	bson_destroy(&reply);
 	
@@ -169,18 +158,26 @@ delete_dispatch(uint64_t dispatch_id)
 }
 
 char *
-search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int audience_size,
-																int num_dispatches, int *result)
-{
+search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
+																 int audience_size, int req_num, int *result){
+/* 
+ * Takes a user id, a pointer to a list of user ids who define
+ * the audience of a dispatch, the size of the audience list,
+ * an upper limit on the number of dispatches to query for,
+ * and a pointer to an integer which is updated to reflect the
+ * number of dispatches that were found to match the query 
+ * dispatch constructed from the user id and audience list.
+ * If the req_num (the limit on the number of dispatches to 
+ * query for) is equal to -1, then the limit is set to 
+ * MAX_INT. Returns a pointer to a JSON string that contains
+ * all of the results that were spawned by the query crafted.
+ * This pointer must be free'd by the function which calls
+ * search_dispatch_by_user_audience.
+ */
   bson_t *target_dispatch;  
 	bson_t child;
-	const bson_t *result_dispatch;
   mongoc_cursor_t *cursor;   
   char query_buffer[10];
-	size_t json_length;
-	int buf_size = 0;
-	char *buf = NULL;
-
 
 	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
@@ -211,18 +208,7 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int audie
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 
 	*result = 0;
-	if(num_dispatches == -1){
-		num_dispatches = INT_MAX;
-	}
-	while(mongoc_cursor_next(cursor, &result_dispatch) && *result < num_dispatches){
-		char *json_str;
-    json_str = bson_as_json(result_dispatch, &json_length);
-    buf_size += json_length;
-    buf = realloc(buf, buf_size);   
-    strncpy(buf + buf_size - json_length, json_str, json_length);
-		*result += 1;
-	}
-
+	char *buf = build_json(cursor, req_num, result);
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
 	
@@ -230,20 +216,22 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, int audie
 }
 
 
-/* Return a pointer to a buffer containing a json of the dispatch found in the database with
- * maching dispatch id. If no such dispatch is found, this function returns null and the int
- * referenced by result is set as 0 (if we found the desired dispatch, result is set to 1)
- */
 char *
-search_dispatch_by_id(uint64_t dispatch_id, int *result)
-{ 
+search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result){ 
+/* 
+ * Takes a dispatch id, an upper limit on the number of 
+ * dispatches to query for, and a pointer to an integer
+ * which is updated to reflect the number of dispatches
+ * that were found to match the dispatch id provided.
+ * If the req_num (the limit on the number of dispatches to 
+ * query for) is equal to -1, then the limit is set to 
+ * MAX_INT. Returns a pointer to a JSON string that contains
+ * all of the results that were spawned by the crafted query.
+ * This pointer must be free'd by the function which calls
+ * search_dispatch_by_id.
+ */
   bson_t *target_dispatch;  
-  const bson_t *result_dispatch;
   mongoc_cursor_t *cursor;
-	size_t json_length;
-	char *json_str;
-	char *buf = NULL;
-
 
   struct mongo_user_connection cn;
   cn.uri_string = "mongodb://localhost:27017";
@@ -254,34 +242,33 @@ search_dispatch_by_id(uint64_t dispatch_id, int *result)
   BSON_APPEND_INT64(target_dispatch, "dispatch_id", dispatch_id);
   
   cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
-  
-  if(!(mongoc_cursor_next(cursor, &result_dispatch))){
-		*result = 0;
-		return buf;
-  }
-   
-	json_str = bson_as_json(result_dispatch, &json_length);
-	buf = realloc(buf, json_length);		
-	strncpy(buf, json_str, json_length);  
-  
+ 
+	*result = 0;
+	char* buf = build_json(cursor, req_num, result);	 
   mongoc_cursor_destroy(cursor);
   bson_destroy(target_dispatch);
   
-	*result = 1;
   return buf;
 }
 
 
 char *
-search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children, int *result)
-{
+search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
+/* 
+ * Takes a dispatch id, an upper limit on the number of 
+ * dispatches to query for, and a pointer to an integer
+ * which is updated to reflect the number of dispatches
+ * that match the query dispatch id. If the req_num 
+ * (the limit on the number of dispatches to query for)
+ * is equal to -1, then the limit is set to MAX_INT.
+ * Returns a pointer to a JSON string that contains all
+ * of the results that were spawned by the query crafted.
+ * This pointer must be free'd by the function which calls
+ * search_dispatch_by_parent_id.
+ */
   bson_t *target_dispatch;  
 	bson_t child;
-	const bson_t *result_dispatch;
   mongoc_cursor_t *cursor;
-	size_t json_length;
-	int buf_size = 0;
-	char *buf = NULL;
 		
 	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
@@ -299,18 +286,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children, int *result
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
 	
 	*result = 0;		
-	if(num_children == -1){
-		num_children = INT_MAX;
-	}
-	while(mongoc_cursor_next(cursor, &result_dispatch) && *result < num_children){
-		char *json_str;
-		json_str = bson_as_json(result_dispatch, &json_length);
-		buf_size += json_length;
-		buf = realloc(buf, buf_size);		
-		//Copy json_str to buf, starting at the "unused" portion of what we just realloc'ed
-		strncpy(buf + buf_size - json_length, json_str, json_length);  
-		*result += 1;
-	}
+	char *buf = build_json(cursor, req_num, result);
 
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
@@ -322,7 +298,11 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int num_children, int *result
 
 int
 parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
-
+/*
+ * Takes a pointer to a dispatch struct and fills it with the
+ * contents of a bson document by parsing the contents of the
+ * document. Returns -1 upon an error, otherwise, returns 0.
+ */
 	struct dispatch_body *body;
 	struct	dispatch_parent *parent;
 	bson_iter_t iter;
@@ -363,16 +343,12 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		body->text = strdup(text);
 	}
 	dis->body = body;
-
-	
 	if(bson_iter_find(&iter, "user_id")){
 		dis->user_id = bson_iter_int64(&iter);
 	}
 	if(bson_iter_find(&iter, "timestamp")){
 		dis->timestamp = bson_iter_time_t(&iter);
 	}
-
-
 	/*
 	 * Pulling data from the audience array 
 	 */
@@ -380,22 +356,17 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		dis->audience_size = bson_iter_int32(&iter);
 	}
 	if(bson_iter_find(&iter, "audience")){
-
 		/* Check that current itter object holds array */
 		if(BSON_ITER_HOLDS_ARRAY(&iter) && dis->audience_size != 0){
-	
 			/* pull bson data in to array audience_array */
 			const uint8_t *array = NULL; 
 			uint32_t array_len = 0;
 			int i = 0;
 			bson_iter_array(&iter, &array_len, &array);
-			
 			/* craft a new bson from our array we just pulled data to */			
 			bson_t *audience_array = bson_new_from_data(array, array_len);
-			
 			/* initialize sub_iter to the new bson doc we just crafted */			
 			bson_iter_init(&sub_iter, audience_array);
-				
 			/* itterate through the new bson document and pull data (where key == index) */
 			while(bson_iter_next(&sub_iter) && i < dis->audience_size){
 				dis->audience[i] = bson_iter_int64(&sub_iter);
@@ -404,26 +375,20 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		bson_destroy(audience_array);
 		}
 	}
-
-
 	/*
 	 * Pulling data from the tags array
 	 */ 
 	if(bson_iter_find(&iter, "num_tags")){
-
 		dis->num_tags = bson_iter_int32(&iter);
 	}
 	if(bson_iter_find(&iter, "tags")){
-
 		if(BSON_ITER_HOLDS_ARRAY(&iter) && dis->num_tags != 0){
-	
 			const uint8_t *array = NULL;
 			uint32_t array_len = 0;			
 			int i = 0;										
 			bson_iter_array(&iter, &array_len, &array);
 			bson_t *tags_array = bson_new_from_data(array, array_len);
-			bson_iter_init(&sub_iter, tags_array);
-				
+			bson_iter_init(&sub_iter, tags_array);	
 			while(bson_iter_next(&sub_iter) && i < dis->num_tags){
 				strcpy(dis->tags[i], bson_iter_utf8(&sub_iter, NULL));
 				i++;
@@ -431,8 +396,6 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		bson_destroy(tags_array);
 		}
 	}
-
-
 	/*
 	 * Pulling data from the user_tags array 
 	 */
@@ -440,9 +403,7 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		dis->num_user_tags = bson_iter_int32(&iter);
 	}
 	if(bson_iter_find(&iter, "user_tags")){
-
 		if(BSON_ITER_HOLDS_ARRAY(&iter) && dis->num_user_tags != 0){
-	
 			const uint8_t *array = NULL; 
 			uint32_t array_len = 0;
 			int i = 0; 
@@ -457,8 +418,6 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		bson_destroy(user_tags_array);
 		}
 	}
-
-
 	/* Fill dispatch_parent struct */
 	if(bson_iter_find_descendant(&iter, "dispatch_parent.type", &sub_iter)){
 		parent->type = bson_iter_int32(&sub_iter);
@@ -467,22 +426,26 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		parent->id =  bson_iter_int64(&sub_iter);  
 	}
 	dis->parent = parent;
-
-
 	if(bson_iter_find(&iter, "fragmentation")){
 		dis->fragmentation = bson_iter_int32(&iter);
 	}
 	if(bson_iter_find(&iter, "dispatch_id")){
 		dis->dispatch_id = bson_iter_int64(&iter);
 	}
-
 	return 0;
 }
 
 
 void
-dispatch_heap_cleanup(struct dispatch *dis)
-{
+dispatch_heap_cleanup(struct dispatch *dis){
+/* Free's all of the memory associated with pointers related
+ * to the storage of a dispach struct that are initialized 
+ * when populating the struct in the parse_dispatch_bson
+ * function. This function should be called after calling
+ * the parse_dispatch_bson function, once the user is finished
+ * referencing the memory associated with the bson struct
+ * that was populated.
+ */
 	free(dis->body->media_path);
 	free(dis->body->text);
 	free(dis->body);
@@ -491,8 +454,10 @@ dispatch_heap_cleanup(struct dispatch *dis)
 
 
 int
-print_dispatch_struct(struct dispatch *dis)
-{
+print_dispatch_struct(struct dispatch *dis){
+/*
+ * Prints a formated version of a dispatch struct
+ */
 	char *time_as_string;
 	
 	printf("-----------------------------------------------------------------------\n");

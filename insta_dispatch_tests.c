@@ -306,25 +306,25 @@ main(int argc, char* argv[])
 	/* search by parent's dispatch id */
 	int result;
 
-	char *buf = search_dispatch_by_parent_id( 6666, 4, &result);		
+	char *buf = search_dispatch_by_parent_id( 6666, -1, &result);		
 	if(strlen(buf) != 1130 || result != 3){
 		printf("TEST FAILED: search_dispatch_by_parent_id( 6666, 4, &result)\n");
 	}
 	free(buf);
 
-	buf = search_dispatch_by_id(1, &result);
+	buf = search_dispatch_by_id(1, -1, &result);
 	if(strlen(buf) != 375 || result != 1){
 		printf("TEST FAILED: search_dispatch_by_id(1, &result)\n");
 	}
 	free(buf);	
 
-	buf = search_dispatch_by_id(20, &result);
+	buf = search_dispatch_by_id(20, -1, &result);
 	if(buf != NULL || result != 0){
 		printf("TEST FAILED: search_dispatch_by_id(20, &result)\n");
 	}
 	free(buf);
 
-	buf = search_dispatch_by_user_audience(1234, NULL, 0, 4, &result);
+	buf = search_dispatch_by_user_audience(1234, NULL, 0, -1, &result);
 	if(strlen(buf) != 862 || result != 2){
 		printf("TEST FAILED: search_dispatch_by_user_audience(1234, NULL, O, 4, &result);\n"); 
 	}

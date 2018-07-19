@@ -19,7 +19,7 @@
 #include "insta_mongo_connect.h"
 #include "cass_user.h"
 #include "insta_user_definitions.h"
-
+#include "util.h"
 
 #define INSTA_DB "insta"
 #define USER_COLLECTION "users"
@@ -33,19 +33,24 @@ init_user(void)
 	return 0;
 }
 
-int 
-search_user_by_name_mongo(char *username)
+char * 
+search_user_by_name_mongo(char *username, int req_num, int *result)
 {
-	/* search for a user by username in the mongo database
-   * returns the number of results found */
+	/* 
+	 * search for a user by username in the mongo database
+   * returns a point to a json string containing all
+   * the users found as a result of the query. int
+   * result is updated to reflect the number of users in
+   * the json. If none are found, returns NULL and sets
+   * result to 0. req_num is a cap on the number of results
+   * to search for (i.e. a query would terminate after 
+   * finding a single result if req_num == 1).
+   */
 	struct mongo_user_connection cn;
 	mongoc_cursor_t *cursor;
 	bson_t *query;
-	const bson_t *doc;
 	bson_error_t error;
-	int result = 0;
-	int n;
-
+	
 	cn.uri_string = "mongodb://localhost:27017";
 	mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
 	query = BCON_NEW (
@@ -55,23 +60,18 @@ search_user_by_name_mongo(char *username)
 		"]"	
 	);
 	cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
-	while (mongoc_cursor_next (cursor, &doc)) {
-    result+=1;
-		struct user usr;
-    parse_user_bson(&usr, doc); 
-    print_user_struct(&usr);
-    user_heap_cleanup(&usr);
-	}
+	
+	*result = 0; //Default expectation is no results were found
+	char *buf = build_json(cursor, req_num, result);	
+
 	if (mongoc_cursor_error (cursor, &error)) {
     fprintf (stderr, "An error occurred: %s\n", error.message);
 	}
 	mongoc_cursor_destroy (cursor);
 	bson_destroy (query);
-	n = mongo_user_teardown(&cn);
-	if(result == 0){
-		return n;
-	}
-	return result;
+	mongo_user_teardown(&cn);
+	
+	return buf;
 }
 
 int 
@@ -84,41 +84,40 @@ search_user_by_name_cass(char *username)
 	return result;
 }
 
-int 
-search_user_by_id_mongo(uint64_t user_id)
+char * 
+search_user_by_id_mongo(uint64_t user_id, int req_num, int *result)
 {
-	/* search for a user in the mongoDB list of 
-   * user by user_id. Return number of results
-   * found or -1 on failure */
+	/*
+	 * search for a user in the mongoDB list of 
+   * user by user_id. Return a pointer to a 
+   * json sring and update result to the number
+   * of users in the json string. Returns NULL
+   * and sets result to 0 if no users are found.
+   * req_num is a cap on the number of results
+   * to search for (i.e. a query would terminate after 
+   * finding a single result if req_num == 1). 
+   */
   struct mongo_user_connection cn;
   mongoc_cursor_t *cursor;
   bson_t *query;
-  const bson_t *doc;
   bson_error_t error;
-  int result = 0;
-  int n;
-
+	
   cn.uri_string = "mongodb://localhost:27017";
   mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
   query = BCON_NEW ("user_id", BCON_INT64(user_id));
   cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
-  while (mongoc_cursor_next (cursor, &doc)) {
-    result+=1;
-    struct user usr;
-		parse_user_bson(&usr, doc); 
-		print_user_struct(&usr);
-		user_heap_cleanup(&usr);
-  }
+	
+	*result = 0; //Default expectation is no results were found
+	char *buf = build_json(cursor, req_num, result); 
+
   if (mongoc_cursor_error (cursor, &error)) {
     fprintf (stderr, "An error occurred: %s\n", error.message);
   }
   mongoc_cursor_destroy (cursor);
   bson_destroy (query);
-  n = mongo_user_teardown(&cn);
-  if(result == 0){
-    return n;
-  }
-  return result;
+  mongo_user_teardown(&cn);
+ 
+	return buf;
 }
 
 char *
@@ -155,8 +154,10 @@ insert_user(struct user *new_user)
 	if((error = mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
 		return error;
 	}
-
-	if((n = search_user_by_id_mongo(new_user->user_id)) > 0) {
+	
+	// -1 is interperated as INT_MAX, and we want an exhaustive search for duplicates
+	search_user_by_id_mongo(new_user->user_id, -1, &n); 
+	if(n > 0) {
 		printf("user with user_id %ld already exists in table\n", new_user->user_id);
 		return -1;
 	}

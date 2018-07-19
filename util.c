@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <mongoc.h>
+#include <bson.h>
 #include "util.h"
 
 uint32_t string_to_ip(char *ipstr){
@@ -22,4 +24,31 @@ char* ip_to_string(uint32_t ip){
 			(ip & 0xff0000) >> 16, (ip & 0xff000000) >> 24);
 	
 	return ipstr;
+}
+
+char*
+build_json(mongoc_cursor_t *cursor, int req_num, int *result){
+	const bson_t *result_dispatch;
+	size_t json_length;	
+	int buf_size;
+	char* buf = NULL;	
+  
+	buf_size = 0;
+	*result = 0;
+
+	if(req_num == -1){
+		req_num = INT_MAX;
+	}
+
+	while(mongoc_cursor_next(cursor, &result_dispatch) && *result < req_num){
+    char *json_str;
+    json_str = bson_as_json(result_dispatch, &json_length);
+    buf_size += json_length;
+    buf = realloc(buf, buf_size);
+    strncpy(buf + buf_size - json_length, json_str, json_length);
+    *result += 1;
+  }
+
+	return buf;
+
 }

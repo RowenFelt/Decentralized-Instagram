@@ -37,9 +37,9 @@ struct personal_data {
 };
 
 int init_user(void);
-int search_user_by_name_mongo(char *username);
+char * search_user_by_name_mongo(char *username, int req_num, int *result);
 int search_user_by_name_cass(char *username);
-int search_user_by_id_mongo(uint64_t user_id);
+char * search_user_by_id_mongo(uint64_t user_id, int req_num, int *result);
 char * search_user_by_id_cass(uint64_t user_id);
 int insert_user(struct user *new_user);
 int delete_user(uint64_t user_id);
