@@ -43,7 +43,6 @@ parse_client_command(char *command){
 			perror("Invalid arguments for pull all: ");
 			return -1;
 		}
-printf("user id: %ld\n", user_id);
 		result = pull_all(user_id);
 	}
 	
@@ -122,12 +121,11 @@ pull_all(uint64_t user_id){
 	int result = 0;
 	bson = search_dispatch_by_user_audience(user_id, NULL, 0, -1, &result);
 	if(bson == NULL){
-		printf("search_dispatch_by_user_audience failed\n");
+		printf("PULL ALL failed, search function returned NULL\n");
 		return -1;
 	}
 	return result;
 }
-
 
 /*
  * Pulls all of the 'children' dispatches for a dispatched referenced by parent_id, 
@@ -140,11 +138,10 @@ pull_child(uint64_t parent_id){
 	int result = 0;
 	bson = search_dispatch_by_parent_id(parent_id, -1, &result);
 	if(bson == NULL){
-		printf("search_dispatch_by_parent_id failed\n");
+		printf("PULL CHILD failed, search function returned NULL\n");
 		return -1;
 	}
-	printf("bson = \n%s\n", bson);	
-	return 0;
+	return result;
 }
 
 
@@ -155,8 +152,17 @@ pull_child(uint64_t parent_id){
  */
 int
 pull_one(uint64_t user_id, uint64_t dispatch_id){
-	
-	return 0;
+	/* dispatch ID's are unique identifiers, so this actually only uses dispatch_id
+   * the user_id field is to differentiate it from pull_user, this behavior
+   * may be revised in the future */
+	char *bson;
+	int result = 0;
+	bson = search_dispatch_by_id(dispatch_id, 1, &result);
+	if(bson == NULL){
+		printf("PULL ONE failed, search function returned NULL\n");
+		return -1;
+	}   	
+	return result;
 }
 
 
@@ -166,7 +172,14 @@ pull_one(uint64_t user_id, uint64_t dispatch_id){
  */
 int
 pull_user(uint64_t user_id){
-	return 0;
+	char *bson;
+	int result = 0;
+	bson = search_user_by_id_mongo(user_id, 1, &result);	
+	if(bson == NULL){
+		printf("PULL USER failed, search function returned NULL\n");
+		return -1;
+	}
+	return result;
 }
 
 
@@ -180,3 +193,7 @@ int
 pull_search(char *field, char* query){
 	return 0;
 }
+
+
+
+

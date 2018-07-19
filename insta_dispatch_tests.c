@@ -336,15 +336,27 @@ main(int argc, char* argv[])
 		printf("TEST FAILED: search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n");
 	}
 	free(buf);
+
+	buf = search_dispatch_by_tags("angstyteen", -1, &result);
+	if(strlen(buf) != 481 || result != 1){
+		printf("TEST FAILED: search_dispatch_by_tags('angstyteen', -1, &result)\n"); 
+	}
+	free(buf);
 	
+	buf = search_dispatch_by_user_tags(3, -1, &result);
+	if(strlen(buf) != 862 || result != 2){
+		printf("TEST FAILED: search_dispatch_by_user_tags(3, -1, &result)\n"); 
+	}
+	free(buf);
+
 	/* delete dispatches */
-	delete_dispatch(6969);
-	delete_dispatch(6666);
-	delete_dispatch(3);
-	delete_dispatch(2);
-	delete_dispatch(1);
-	delete_dispatch(6667);
-	delete_dispatch(14351614);
+//	delete_dispatch(6969);
+//	delete_dispatch(6666);
+//	delete_dispatch(3);
+//	delete_dispatch(2);
+//	delete_dispatch(1);
+//	delete_dispatch(6667);
+//	delete_dispatch(14351614);
 }
 
 
