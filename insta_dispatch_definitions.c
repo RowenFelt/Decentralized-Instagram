@@ -549,20 +549,6 @@ print_dispatch_struct(struct dispatch *dis){
 }
 
 int
-push_dispatch(struct dispatch *dis)
-{
-	//TODO
-	return 0; 
-}
-
-int
-pull_dispatch(uint64_t dispatch_id)
-{
-	//TODO
-	return 0;
-}
-
-int
 update_feed(void)
 {
 	//TODO

@@ -20,18 +20,9 @@
 #include "insta_user_definitions.h"
 #include "insta_dispatch_definitions.h"
 
-
-/*
- * Uses a series of memory comparison to 'parse' the memory location referenced by 'command'.
- * If the memory comparision is sucessful, then one of the server sub functions is called.
- * The subfunctions, defined in this library, will utilized the mongo insta libraries
- * (insta_user_definitions.so and insta_dispatch_definitions.so) to query the insta mongo 
- * database and get bson documents which contian the relevant information that the client
- * software requested. The return type is currently ambigious, probably will return an int
- * and call a method to send bson over the ineret from within on of the submethods...
- */  
+  
 int
-parse_client_command(char *command){	
+parse_server_command(char *command, int fd){	
 	int result;
 	
 	if(memcmp(command, "pull all ", 9) == 0){
@@ -43,7 +34,7 @@ parse_client_command(char *command){
 			perror("Invalid arguments for pull all: ");
 			return -1;
 		}
-		result = pull_all(user_id);
+		result = pull_all(user_id, fd);
 	}
 	
 			
@@ -54,7 +45,7 @@ parse_client_command(char *command){
 			perror("Invalid arguments for pull child: ");
 			return -1;
 		}
-		result = pull_child(parent_id);
+		result = pull_child(parent_id, fd);
 	}
 	
 
@@ -71,112 +62,115 @@ parse_client_command(char *command){
 			perror("Invalid arguments: ");
 			return -1;
 		}
-		result = pull_one(user_id, dispatch_id);
+		result = pull_dispatch(user_id, dispatch_id, fd);
 	}
 
 
 	else if(memcmp(command, "pull user ", 10) == 0){
 		uint64_t user_id;
 		user_id = strtoll((command + 10), NULL, 10);
+		printf("user_id = %ld\n", user_id);
 		if(user_id == LLONG_MIN || user_id == LLONG_MAX || user_id == 0 ){
 			perror("Invalid arguments for pull user: ");
 			return -1;
 		}
-		result = pull_user(user_id);
+		result = pull_user(user_id, fd);
 	}
 
 
-	else if(memcmp(command, "pull tags ", 10) == 0){
+	else if(memcmp(command, "pull search tags ", 17) == 0){
 		char *query, *str;
-		command+= 10;
+		command+= 17;
 		str = strdup(command);
 		if((query = strtok(str, " "))  == NULL){
 			printf("Invalid argument for pull search\n");
 			return -1;
 		}
 	
-		result =	pull_tags(query);
+		result =	pull_tags(query, fd);
 	}
 
-	else if(memcmp(command, "pull user_tags ", 15) == 0){
+	else if(memcmp(command, "pull search user_tags ", 22) == 0){
 		uint64_t user_id;
-		command+= 15;
+		command+= 22;
 		user_id = strtoll((command), NULL, 10);
     if(user_id == LLONG_MIN || user_id == LLONG_MAX || user_id == 0 ){
       perror("Invalid arguments for pull user: ");
       return -1;
     }
-		result =	pull_user_tags(user_id);
+		result =	pull_user_tags(user_id, fd);
 	}
 	return result;
 }
 
-/*
- * Pulls all the dispatches from the user referenced by user id, where all is 
- * defined as some predefined quantity of dispatches.
- */
+
 int
-pull_all(uint64_t user_id){
+pull_all(uint64_t user_id, int fd){
 	char *bson;
 	int result = 0;
+	int n = 0;
 	bson = search_dispatch_by_user_audience(user_id, NULL, 0, -1, &result);
 	if(bson == NULL){
 		printf("PULL ALL failed, search function returned NULL\n");
 		return -1;
 	}
+	n =	write(fd, bson, strlen(bson)); 
+	if(n < 0) {
+		perror("write");
+		return -1;
+	}
 	return result;
 }
 
-/*
- * Pulls all of the 'children' dispatches for a dispatched referenced by parent_id, 
- * where children dispatches are defined as dispatches with he parent given by 
- * parent_id
- */
 int
-pull_child(uint64_t parent_id){
+pull_child(uint64_t parent_id, int fd){
 	char *bson;
 	int result = 0;
+	int n = 0;
 	bson = search_dispatch_by_parent_id(parent_id, -1, &result);
 	if(bson == NULL){
 		printf("PULL CHILD failed, search function returned NULL\n");
 		return -1;
 	}
+	n =	write(fd, bson, strlen(bson));
+	if(n < 0){
+		perror("write");
+		return -1;
+	}
 	return result;
 }
 
-
-/*
- * Pulls a single dispatch referenced by user_id and dispatch_id -- the combination of these
- * two variable should act as a unique reference to a singule dispatch (assuming no
- * duplication in a database
- */
 int
-pull_one(uint64_t user_id, uint64_t dispatch_id){
-	/* dispatch ID's are unique identifiers, so this actually only uses dispatch_id
-   * the user_id field is to differentiate it from pull_user, this behavior
-   * may be revised in the future */
+pull_dispatch(uint64_t user_id, uint64_t dispatch_id, int fd){
 	char *bson;
 	int result = 0;
+	int n = 0;
 	bson = search_dispatch_by_id(dispatch_id, 1, &result);
 	if(bson == NULL){
 		printf("PULL ONE failed, search function returned NULL\n");
 		return -1;
 	}   	
+	n = write(fd, bson, strlen(bson));
+	if(n < 0){
+		perror("write");
+		return -1;
+	}
 	return result;
 }
 
-
-/*
- * Queries the mongo user collection for a user with an id matching 'user_id', and pulls that
- * user's information (presumably as a bson).
- */
 int
-pull_user(uint64_t user_id){
+pull_user(uint64_t user_id, int fd){
 	char *bson;
 	int result = 0;
-	bson = search_user_by_id_mongo(user_id, 1, &result);	
+	int n = 0;
+	bson = search_user_by_id_mongo(user_id, -1, &result);	
 	if(bson == NULL){
 		printf("PULL USER failed, search function returned NULL\n");
+		return -1;
+	}
+	n = write(fd, bson, strlen(bson));
+	if(n < 0){
+		perror("write");
 		return -1;
 	}
 	return result;
@@ -184,34 +178,55 @@ pull_user(uint64_t user_id){
 
 
 
-/*
- * Queries the mongo dispatch collection for a dispatch (or multiple dispatches), which 
- * include user_id in the user_tags array
- */
 int
-pull_user_tags(uint64_t user_id){
+pull_user_tags(uint64_t user_id, int fd){
 	char *bson;
 	int result = 0;
+	int n = 0;
 	bson = search_dispatch_by_user_tags(user_id, -1, &result);	
 	if(bson == NULL){
 		printf("PULL USER TAGS failed, search function returned NULL\n");
 		return -1;
 	}
+	n = write(fd, bson, strlen(bson));
+	if(n < 0) {
+		perror("write");
+		return -1;
+	}
 	return 0;
 }
 
-/*
- * Queries the mongo dispatch collection for a dispatch (or multiple dispatches), which 
- * include string query in the tags array
- */
+
 int
-pull_tags(const char *query){
+pull_tags(const char *query, int fd){
 	char *bson;
 	int result = 0;
+	int n = 0;
 	bson = search_dispatch_by_tags(query, -1, &result);	
 	if(bson == NULL){
 		printf("PULL TAGS failed, search function returned NULL\n");
 		return -1;
 	}
+	if(n < 0) {
+		perror("write");
+		return -1;
+	}
+	n = write(fd, bson, strlen(bson));
+  if(n < 0) {
+    perror("write");
+    return -1;
+  }
 	return 0;
 }
+
+
+/* 
+ * Receives a pushed json child dispatch and inserts it into the database
+ */ 
+
+int
+push_child(char *json)
+{
+	return 0;	
+}
+
