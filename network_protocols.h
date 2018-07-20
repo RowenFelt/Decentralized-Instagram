@@ -8,14 +8,14 @@
 #include "insta_user_definitions.h"
 #include "insta_dispatch_definitions.h"
 
-int parse_server_command(char *command, int fd);
+int parse_server_command(int in, int out);
 
-int pull_all(uint64_t user_id, int fd);
-int pull_child(uint64_t parent_id, int fd);
-int pull_dispatch(uint64_t user_id, uint64_t dispatch_id, int fd);
-int pull_user(uint64_t user_id, int fd);
-int pull_user_tags(uint64_t user_id, int fd);
-int pull_tags(const char *query, int fd);
+int pull_all(int in, int out);
+int pull_child(int in, int out);
+int pull_dispatch(int in, int out);
+int pull_user(int in, int out);
+int pull_user_tags(int in, int out);
+int pull_tags(int in, int out);
 
 int push_child(char *json);
 int push_user_tag(char *json);
