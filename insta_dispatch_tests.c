@@ -17,6 +17,7 @@
 #include <time.h>
 #include "insta_dispatch_definitions.h"
 #include "util.h"
+#include "insta_mongo_connect.h"
 
 int
 main(int argc, char* argv[])
@@ -304,25 +305,27 @@ main(int argc, char* argv[])
 	/* there should only be a total of 6 dispatches inserted */
 	
 	/* search by parent's dispatch id */
-	int result;
+	int result, num_failed;
+
+	num_failed = 0;
 
 	char *buf = search_dispatch_by_parent_id( 6666, -1, &result);		
 	if(strlen(buf) != 1742 || result != 3){
-		printf("TEST FAILED: search_dispatch_by_parent_id( 6666, 4, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
-
-	/* delete dispatches w/ parent id 6666 so that we can reuse them below */
-	delete_dispatch(1);
-	delete_dispatch(2);
-	delete_dispatch(3);
-	
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_dispatch_by_parent_id(6666, -1, &result)\n");
+	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	//Testing insert_json_from_fd funcion from util.c, which uses dispatches 
 	//generated in this test file
 	//---------------------------------------------------------------------
 	
 	//Open the test file
 	int fd;
-	if((fd = open("json_test.txt", O_CREAT | O_RDWR, 0666)) == -1){
+	if((fd = open("json_dispatch_test.txt", O_CREAT | O_RDWR, 0666)) == -1){
 		perror("open");
 		return -1;
 	}
@@ -343,49 +346,98 @@ main(int argc, char* argv[])
 	//printf("Read the following leading bytes: %s\n", leading_bytes);
 
 	//attempt to read from fd and store bsons in a collection
-	if(insert_json_from_fd(fd, "dispatch") != 0){
-		printf("failed to insert json/n");
+	if(insert_json_from_fd(fd, DISPATCH_COLLECTION) <= 0){
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("insert from JSON\n");
+	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
 
 	//---------------------------------------------------------------------
 
 	buf = search_dispatch_by_id(1, -1, &result);
 	if(strlen(buf) != 607 || result != 1){
-		printf("TEST FAILED: search_dispatch_by_id(1, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+		printf("search_dispatch_by_id(1, -1, &result)\n");
+		printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);	
 
 	buf = search_dispatch_by_id(20, -1, &result);
 	if(buf != NULL || result != 0){
-		printf("TEST FAILED: search_dispatch_by_id(20, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_dispatch_by_id(20, -1, &result)\n");
 	free(buf);
 
 	buf = search_dispatch_by_user_audience(1234, NULL, 0, -1, &result);
 	if(strlen(buf) != 1410 || result != 2){
-		printf("TEST FAILED: search_dispatch_by_user_audience(1234, NULL, O, 4, &result);\n"); 
+		printf("TEST FAILED: "); 
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_dispatch_by_user_audience(1234, NULL, O, 4, &result)\n");
+	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
+
 
 	uint64_t aud[2] = {4, 19};
 	buf = search_dispatch_by_user_audience(1234, aud, 2, -1, &result);
 	if(strlen(buf) != 666 || result != 1){
-		printf("TEST FAILED: search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n");
+	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
+
 
 	buf = search_dispatch_by_tags("angstyteen", -1, &result);
 	if(strlen(buf) != 713 || result != 1){
-		printf("TEST FAILED: search_dispatch_by_tags('angstyteen', -1, &result)\n"); 
+		printf("TEST FAILED: "); 
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_dispatch_by_tags('angstyteen', -1, &result)\n");
+	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
 	
+
 	buf = search_dispatch_by_user_tags(3, -1, &result);
 	if(strlen(buf) != 1410 || result != 2){
-		printf("TEST FAILED: search_dispatch_by_user_tags(3, -1, &result)\n"); 
+		printf("TEST FAILED: "); 
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_dispatch_by_user_tags(3, -1, &result)\n");
+	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
+
+	if(num_failed == 0){
+		printf("ALL TESTS SUCESSFUL\n");
+	}
+
 
 	/* delete dispatches */
 //	delete_dispatch(6969);

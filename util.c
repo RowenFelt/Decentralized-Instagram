@@ -1,3 +1,9 @@
+/*
+ * util.c
+ * variouse utility methods
+ * Authors: Rowen Felt and Campbell Boswell
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -7,6 +13,9 @@
 #include <bson.h>
 #include "util.h"
 #include "insta_mongo_connect.h"
+#include "insta_user_definitions.h"
+#include "insta_dispatch_definitions.h"
+
 
 uint32_t string_to_ip(char *ipstr){
 	uint32_t ip;
@@ -76,7 +85,7 @@ insert_json_from_fd(int fd, char *collection_name){
 	bson_json_reader_t *json_reader;
 	bson_t document =	BSON_INITIALIZER;
 	bson_error_t error;
-	int a;
+	int a, num_docs_inserted;
 	
 	if(fcntl(fd, F_GETFD) == -1 || errno == EBADF){
     printf("File closed\n");
@@ -103,11 +112,22 @@ insert_json_from_fd(int fd, char *collection_name){
 			fprintf(stderr, "Read Error:%s\n", error.message);
 			return -1;
 		}
-	
-		if(!(mongoc_collection_insert_one(cn.collection, &document, NULL, NULL, &error))){
-			fprintf(stderr, "Insert Error: %s\n", error.message);	
-			return -1;
+		
+		if(strcmp(collection_name, USER_COLLECTION) == 0){
+			if(insert_user_from_bson(&document) < 0){
+				printf("insertion failed\n");
+				return -1;
+			}	
 		}
+	
+		else if(strcmp(collection_name, DISPATCH_COLLECTION) == 0){
+			if(insert_dispatch_from_bson(&document) < 0){
+				printf("insertion failed\n");
+				return -1;
+			}	
+		}
+	
+		num_docs_inserted += a;
 		bson_reinit(&document);	
 	} 
 	
@@ -120,7 +140,7 @@ insert_json_from_fd(int fd, char *collection_name){
 	bson_destroy(&document);
 	mongo_user_teardown(&cn);
 
-	return 0;
+	return num_docs_inserted;
 }
 
 
