@@ -47,13 +47,13 @@ get_user_mongo: get_user_mongo.c
 insta_mongo_connect.o: insta_mongo_connect.c
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(MONGOLINK)
 
-util.o: util.c
+util.o: util.c 
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(MONGOLINK)
 
 cass_user.o: cass_user.c
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(CASSFLAGS) $(MONGOLINK) $(MONGOCOMP)
 
-cass_user.so: cass_user.o util.o
+cass_user.so: cass_user.o
 	gcc -rdynamic -shared -o $@ $^ $(CASSFLAGS)
 
 practice: practice.c cass_user.so

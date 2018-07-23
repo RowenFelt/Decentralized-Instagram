@@ -118,6 +118,29 @@ insert_dispatch(struct dispatch *dis) {
 	return mongo_user_teardown(&cn);
 }
 
+
+    
+    //Check for a duplicate, and delete if present - Write insert dispatch as bson
+    //and insert user as bson methods that do duplcation checking and delete/overwrite
+    // duplicates -- put these in the user_definitions and dispatch_definitions files.
+
+//int insert_dispatch_from_bson(bson_t *documnet){
+/*	search_dispatch_by_id(dis.dispatch_id, 1, &result);
+  if(result > 0){
+      if(delete_dispatch(dis.dispatch_id ) < 0){
+        printf("Delete Error\n");
+        return -1;
+      }
+    }
+
+  if(!(mongoc_collection_insert_one(cn.collection, &document, NULL, NULL, &error))){ 
+      fprintf(stderr, "Insert Error: %s\n", error.message);  
+      return -1; 
+    } 
+}
+*/
+
+
 int 
 create_dispatch(void){
 	//TODO

@@ -40,6 +40,7 @@ struct dispatch_parent {
 };
 
 int insert_dispatch(struct dispatch *dis);
+int insert_dispatch_from_bson(bson_t *documnet);
 int create_dispatch(void);
 int delete_dispatch(uint64_t dispatch_id);
 char *search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result);

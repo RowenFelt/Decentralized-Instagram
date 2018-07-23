@@ -10,7 +10,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "util.h"
 #include "cass_user.h"
 
 static int init_error(CassFuture* statement_future);
