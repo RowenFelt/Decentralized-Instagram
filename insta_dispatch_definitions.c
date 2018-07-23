@@ -21,9 +21,6 @@
 #include "util.h"
 
 
-#define INSTA_DB "insta"
-#define DISPATCH_COLLECTION "dispatch"
-
 int
 insert_dispatch(struct dispatch *dis) {
 /* 
@@ -568,20 +565,6 @@ print_dispatch_struct(struct dispatch *dis){
 	printf("fragmentation: %d \n", dis->fragmentation);	
 	printf("dispatch_id: %ld \n",dis->dispatch_id);	
 	printf("-----------------------------------------------------------------------\n");
-	return 0;
-}
-
-int
-push_dispatch(struct dispatch *dis)
-{
-	//TODO
-	return 0; 
-}
-
-int
-pull_dispatch(uint64_t dispatch_id)
-{
-	//TODO
 	return 0;
 }
 

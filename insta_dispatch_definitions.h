@@ -52,8 +52,6 @@ char *search_dispatch_by_user_tags(uint64_t query, int req_num, int *result);
 int parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch);
 void dispatch_heap_cleanup(struct dispatch *dis);
 int print_dispatch_struct(struct dispatch *dis);
-int push_dispatch(struct dispatch *dis);
-int pull_dispatch(uint64_t dispatch_id);
 int update_feed(void);
 
 

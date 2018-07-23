@@ -21,9 +21,6 @@
 #include "insta_user_definitions.h"
 #include "util.h"
 
-#define INSTA_DB "insta"
-#define USER_COLLECTION "users"
-#define CASS_TABLE "user"
 
 static int parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type);
 

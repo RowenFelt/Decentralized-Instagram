@@ -34,6 +34,25 @@ int main(int argc, char *argv[])
 	following.user_ids = following_ids;
 	cb.following = &following;
 	
+//	struct user test;
+//  struct personal_data test_pd;
+//  struct insta_relations test_followers;
+//  struct insta_relations test_following;
+//  test.user_id = 9999;
+//  test.username = "grunge";
+//  test.image_path = "/images/darkness";
+//  test_pd.name = "Kthulu";
+//  test.bio = &test_pd;
+//  test.fragmentation = 0;
+//  test_followers.direction = 0;
+//  test_followers.count = 0;
+//  test.followers = &test_followers;
+//  test_following.direction = 1;
+//  test_following.count = 1;
+//  uint64_t test_following_ids[1] = {666};
+//  test_following.user_ids = test_following_ids;
+//  test.following = &test_following;
+
 	struct user rf;
 	struct personal_data rf_pd;
 	struct insta_relations rf_followers;
@@ -108,6 +127,7 @@ int main(int argc, char *argv[])
 	insert_user(&rf); //User object has expected strlen of 453 as json
 	insert_user(&pj); //User object has expected strlen of 478 as json
 	insert_user(&pj_imposter);		//has expected strlen of 486 as json	
+	//insert_user(&test);
 
 	/* test search_user */
 	buf = search_user_by_name_mongo("cboswell", req_num, &result);
