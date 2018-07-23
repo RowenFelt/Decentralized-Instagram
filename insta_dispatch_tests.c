@@ -16,7 +16,7 @@
 #include <pthread.h>
 #include <time.h>
 #include "insta_dispatch_definitions.h"
-
+#include "util.h"
 
 int
 main(int argc, char* argv[])
@@ -307,13 +307,51 @@ main(int argc, char* argv[])
 	int result;
 
 	char *buf = search_dispatch_by_parent_id( 6666, -1, &result);		
-	if(strlen(buf) != 1130 || result != 3){
+	if(strlen(buf) != 1742 || result != 3){
 		printf("TEST FAILED: search_dispatch_by_parent_id( 6666, 4, &result)\n");
+	}
+
+	/* delete dispatches w/ parent id 6666 so that we can reuse them below */
+	delete_dispatch(1);
+	delete_dispatch(2);
+	delete_dispatch(3);
+	
+	//Testing insert_json_from_fd funcion from util.c, which uses dispatches 
+	//generated in this test file
+	//---------------------------------------------------------------------
+	
+	//Open the test file
+	int fd;
+	if((fd = open("json_test.txt", O_CREAT | O_RDWR, 0666)) == -1){
+		perror("open");
+		return -1;
+	}
+	
+	//NOTE: the insert_json_from_fd method does NOT work if fd has just been 
+	//written to...not sure why
+
+	/* Uncomment to write to json_test.txt	initially */
+	//	if(write(fd, buf, 1742) != 1742){
+	//		perror("write");
+	//		return -1;
+	//	}
+	
+	/* Requires that you write 3 random bytes to json_test.txt first to test this part */
+	int num_leading_bytes = 3;
+	char *leading_bytes = malloc(num_leading_bytes);
+	read(fd, leading_bytes, num_leading_bytes);
+	//printf("Read the following leading bytes: %s\n", leading_bytes);
+
+	//attempt to read from fd and store bsons in a collection
+	if(insert_json_from_fd(fd, "dispatch") != 0){
+		printf("failed to insert json/n");
 	}
 	free(buf);
 
+	//---------------------------------------------------------------------
+
 	buf = search_dispatch_by_id(1, -1, &result);
-	if(strlen(buf) != 375 || result != 1){
+	if(strlen(buf) != 607 || result != 1){
 		printf("TEST FAILED: search_dispatch_by_id(1, &result)\n");
 	}
 	free(buf);	
@@ -325,26 +363,26 @@ main(int argc, char* argv[])
 	free(buf);
 
 	buf = search_dispatch_by_user_audience(1234, NULL, 0, -1, &result);
-	if(strlen(buf) != 862 || result != 2){
+	if(strlen(buf) != 1410 || result != 2){
 		printf("TEST FAILED: search_dispatch_by_user_audience(1234, NULL, O, 4, &result);\n"); 
 	}
 	free(buf);
 
-	uint64_t aud[] = {4, 19};
+	uint64_t aud[2] = {4, 19};
 	buf = search_dispatch_by_user_audience(1234, aud, 2, -1, &result);
-	if(strlen(buf) != 434 || result != 1){
+	if(strlen(buf) != 666 || result != 1){
 		printf("TEST FAILED: search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n");
 	}
 	free(buf);
 
 	buf = search_dispatch_by_tags("angstyteen", -1, &result);
-	if(strlen(buf) != 481 || result != 1){
+	if(strlen(buf) != 713 || result != 1){
 		printf("TEST FAILED: search_dispatch_by_tags('angstyteen', -1, &result)\n"); 
 	}
 	free(buf);
 	
 	buf = search_dispatch_by_user_tags(3, -1, &result);
-	if(strlen(buf) != 862 || result != 2){
+	if(strlen(buf) != 1410 || result != 2){
 		printf("TEST FAILED: search_dispatch_by_user_tags(3, -1, &result)\n"); 
 	}
 	free(buf);

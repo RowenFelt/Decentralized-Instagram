@@ -131,12 +131,12 @@ int main(int argc, char *argv[])
 
 	/* test search_user */
 	buf = search_user_by_name_mongo("cboswell", req_num, &result);
-	if(strlen(buf) != 457 || result != 1){
+	if(strlen(buf) != 774 || result != 1){
 		printf("TEST FAILED: search_for_user_by_name_mongo('cboswell', req_num, &result)\n");
 	}
 	
 	buf = search_user_by_id_mongo(12345, req_num, &result);
-	if(strlen(buf) != 457 || result != 1){
+	if(strlen(buf) != 774 || result != 1){
 		printf("TEST FAILED: search_for_user_by_id_mongo(12345, req_num, &result)\n");
 	}
 	
@@ -150,27 +150,27 @@ int main(int argc, char *argv[])
 	}
 
 	buf = search_user_by_name_mongo("rfelt", req_num, &result);
-	if(strlen(buf) != 453 || result != 1){
+	if(strlen(buf) != 770 || result != 1){
 		printf("TEST FAILED: search_user_by_name_mongo('rfelt', req_num, &result)\n");
 	}
 	
 	buf = search_user_by_name_mongo("Rowen Felt", req_num, &result);
-	if(strlen(buf) != 453 || result != 1){
+	if(strlen(buf) != 770 || result != 1){
 		printf("TEST FAILED: search_user_by_name_mongo('Rowen Felt', req_num, &result)\n");
 	}
 
 	buf = search_user_by_name_mongo("Pete Johnson", req_num, &result);
-	if(strlen(buf) != 965 || result != 2){
+	if(strlen(buf) != 1767 || result != 2){
 		printf("TEST FAILED: search_user_by_name_mongo('Pete Johson', req_num, &result)\n");
 	}
 
 	buf = search_user_by_id_mongo(159179, req_num, &result);
-	if(strlen(buf) != 487 || result != 1){
+	if(strlen(buf) != 888 || result != 1){
 		printf("TEST FAILED: search_user_by_id_mongo(159179, req_num, &result)\n");
 	}
-	
+
 	buf = search_user_by_id_mongo(159178, req_num, &result);
-	if(strlen(buf) != 478 || result != 1){
+	if(strlen(buf) != 879 || result != 1){
 		printf("TEST FAILED: search_user_by_id_mongo(159178, req_num, &result)\n");
 	}
 	
