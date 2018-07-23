@@ -20,6 +20,7 @@
 #include "insta_user_definitions.h"
 #include "insta_dispatch_definitions.h"
 #include "insta_mongo_connect.h"
+#include "util.h"
 
 static uint64_t read_id(int fd);
   
@@ -27,59 +28,42 @@ int
 parse_server_command(int in, int out){	
 	int result;
 	int n = 0;
-	char *command = malloc(sizeof(char) * 14);	
-	n = read(in, command, 14);	
+	char *command = malloc(sizeof(char) * INSTA_PROTOCOL_SIZE);	
+	n = read(in, command, INSTA_PROTOCOL_SIZE);	
 	if(n < 0){
 		perror("read");
 		return -1;
 	}
 
-	if(memcmp(command, "pull all***** ", 14) == 0){	
-		result = pull_all(in, out);
-	}
-	
-	else if(memcmp(command, "pull child*** ", 14) == 0){
-		result = pull_child(in, out);
-	}
-	
+	struct insta_protocol protocol_list[] = {
+		{"pull all***** ", pull_all},
+		{"pull child*** ", pull_child},
+		{"pull dispatch ", pull_dispatch},
+		{"pull user**** ", pull_user},
+		{"pull user_tag ", pull_user_tags},
+		{"pull tags**** ", pull_tags},
+		{"push child*** ", push_child},
+		{"push user_tag ", push_user_tag},
+		{"push message* ", push_message},
+		{"push dispatch ", push_dispatch},
+		{"push user**** ", push_user},
+	};
 
-	else if(memcmp(command, "pull dispatch ", 14) == 0){
-		result = pull_dispatch(in, out);
-	}
-
-
-	else if(memcmp(command, "pull user**** ", 14) == 0){
-		result = pull_user(in, out);
-	}
-
-
-	else if(memcmp(command, "pull user_tag ", 14) == 0){
-		result = pull_user_tags(in, out);
-	}
-
-	else if(memcmp(command, "pull tags**** ", 14) == 0){
-		result =	pull_tags(in, out);
+	int (*protocol_func)(int, int) = NULL;
+	for(int i = 0; i < INSTA_PROTOCOL_NUM; i++){
+		if(memcmp(command, protocol_list[i].protocol, 
+								INSTA_PROTOCOL_SIZE) == 0){
+			protocol_func = protocol_list[i].func;
+			break;
+		}
 	}
 
-	else if(memcmp(command, "push child*** ", 14) == 0){
-		result = push_child(in);
-	}
-	else if(memcmp(command, "push user_tag ", 14) == 0){
-		result = push_user_tag(in);
-	}
-	else if(memcmp(command, "push message* ", 14) == 0){
-		result = push_message(in);
-	}
-	else if(memcmp(command, "push dispatch ", 14) == 0){
-		result = push_dispatch(in);
-	}
-	else if(memcmp(command, "push user*** ", 14) == 0){
-		result = push_user(in);
-	}
+	result = protocol_func(in, out);
 	
 	free(command);
 	return result;
 }
+
 
 static uint64_t 
 read_id(int fd)
@@ -207,7 +191,7 @@ pull_user_tags(int in, int out){
 		perror("write");
 		return -1;
 	}
-	return 0;
+	return result;
 }
 
 
@@ -240,7 +224,7 @@ pull_tags(int in, int out){
     perror("write");
     return -1;
   }
-	return 0;
+	return result;
 }
 
 
@@ -249,7 +233,7 @@ pull_tags(int in, int out){
  */ 
 
 int
-push_child(int fd)
+push_child(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
@@ -261,7 +245,7 @@ push_child(int fd)
  * Receives a pushed dispatch with user_tags and inserts it into the database
  */ 
 int
-push_user_tag(int fd)
+push_user_tag(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
@@ -273,7 +257,7 @@ push_user_tag(int fd)
  * Receives a pushed direct message dispatch and inserts it into the database
  */ 
 int
-push_message(int fd)
+push_message(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
@@ -285,7 +269,7 @@ push_message(int fd)
  * Receives a pushed dispatch and inserts it into the database
  */ 
 int
-push_dispatch(int fd)
+push_dispatch(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
@@ -297,7 +281,7 @@ push_dispatch(int fd)
  * Receives a pushed user object and inserts it into the database
  */ 
 int
-push_user(int fd)
+push_user(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, USER_COLLECTION);	
