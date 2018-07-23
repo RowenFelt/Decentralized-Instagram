@@ -17,8 +17,8 @@ int pull_user(int in, int out);
 int pull_user_tags(int in, int out);
 int pull_tags(int in, int out);
 
-int push_child(char *json);
-int push_user_tag(char *json);
-int push_message(char *json);
-int push_dispatch(char *json);
-int push_user(char *json);
+int push_child(int fd);
+int push_user_tag(int fd);
+int push_message(int fd);
+int push_dispatch(int fd);
+int push_user(int fd);

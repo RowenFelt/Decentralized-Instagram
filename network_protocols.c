@@ -19,9 +19,9 @@
 #include "network_protocols.h"
 #include "insta_user_definitions.h"
 #include "insta_dispatch_definitions.h"
+#include "insta_mongo_connect.h"
 
 static uint64_t read_id(int fd);
-
   
 int
 parse_server_command(int in, int out){	
@@ -60,6 +60,23 @@ parse_server_command(int in, int out){
 	else if(memcmp(command, "pull tags**** ", 14) == 0){
 		result =	pull_tags(in, out);
 	}
+
+	else if(memcmp(command, "push child*** ", 14) == 0){
+		result = push_child(in);
+	}
+	else if(memcmp(command, "push user_tag ", 14) == 0){
+		result = push_user_tag(in);
+	}
+	else if(memcmp(command, "push message* ", 14) == 0){
+		result = push_message(in);
+	}
+	else if(memcmp(command, "push dispatch ", 14) == 0){
+		result = push_dispatch(in);
+	}
+	else if(memcmp(command, "push user*** ", 14) == 0){
+		result = push_user(in);
+	}
+	
 	free(command);
 	return result;
 }
@@ -232,8 +249,57 @@ pull_tags(int in, int out){
  */ 
 
 int
-push_child(char *json)
+push_child(int fd)
 {
-	return 0;	
+	int result = 0;
+	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
+	return result;
 }
 
+
+/* 
+ * Receives a pushed dispatch with user_tags and inserts it into the database
+ */ 
+int
+push_user_tag(int fd)
+{
+	int result = 0;
+	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
+	return result;
+}
+
+
+/* 
+ * Receives a pushed direct message dispatch and inserts it into the database
+ */ 
+int
+push_message(int fd)
+{
+	int result = 0;
+	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
+	return result;
+}
+
+
+/* 
+ * Receives a pushed dispatch and inserts it into the database
+ */ 
+int
+push_dispatch(int fd)
+{
+	int result = 0;
+	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
+	return result;
+}
+
+
+/* 
+ * Receives a pushed user object and inserts it into the database
+ */ 
+int
+push_user(int fd)
+{
+	int result = 0;
+	result = insert_json_from_fd(fd, USER_COLLECTION);	
+	return result;
+}

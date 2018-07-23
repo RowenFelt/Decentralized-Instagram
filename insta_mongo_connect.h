@@ -13,7 +13,6 @@
 #define INSTA_DB "insta"
 #define USER_COLLECTION "users"
 #define CASS_TABLE "user"
-#define INSTA_DB "insta"
 #define DISPATCH_COLLECTION "dispatch"
 
 
