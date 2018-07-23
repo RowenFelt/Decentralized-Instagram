@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "insta_user_definitions.h"
+#include "util.c"
+#include "insta_mongo_connect.h"
 
 int main(int argc, char *argv[])
 {
@@ -117,10 +119,11 @@ int main(int argc, char *argv[])
 	pj_imposter.following = &pj_imposter_following;
 	
 	/* test insert_user */
-	int result, req_num;
+	int result, req_num, num_failed;
 	char *buf;
 
 	req_num = -1; //The number of results requested in queries
+	num_failed = 0;
 
 	/* test insert_user */
 	insert_user(&cb); //User object has expected strlen of 457 as json
@@ -132,55 +135,157 @@ int main(int argc, char *argv[])
 	/* test search_user */
 	buf = search_user_by_name_mongo("cboswell", req_num, &result);
 	if(strlen(buf) != 774 || result != 1){
-		printf("TEST FAILED: search_for_user_by_name_mongo('cboswell', req_num, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_for_user_by_name_mongo('cboswell', req_num, &result)\n");
+  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
+	
 	
 	buf = search_user_by_id_mongo(12345, req_num, &result);
 	if(strlen(buf) != 774 || result != 1){
-		printf("TEST FAILED: search_for_user_by_id_mongo(12345, req_num, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_for_user_by_id_mongo(12345, req_num, &result)\n");
+  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
+	
 	
 	if(delete_user(12345) != 1){
-		printf("TEST FAILED: delete_user(12345)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("delete_user(12345)\n");
+	
 
 	buf = search_user_by_id_mongo(12345, req_num, &result);
 	if(buf != NULL || result != 0){
-		printf("TEST FAILED: user should not exist\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_user_by_id_mongo(12345) where 12345 is not a valid id\n");
+	
 
 	buf = search_user_by_name_mongo("rfelt", req_num, &result);
 	if(strlen(buf) != 770 || result != 1){
-		printf("TEST FAILED: search_user_by_name_mongo('rfelt', req_num, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_user_by_name_mongo('rfelt', req_num, &result)\n");
+  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
+	
 	
 	buf = search_user_by_name_mongo("Rowen Felt", req_num, &result);
 	if(strlen(buf) != 770 || result != 1){
-		printf("TEST FAILED: search_user_by_name_mongo('Rowen Felt', req_num, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_user_by_name_mongo('Rowen Felt', req_num, &result)\n");
+  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
+	
 
 	buf = search_user_by_name_mongo("Pete Johnson", req_num, &result);
 	if(strlen(buf) != 1767 || result != 2){
-		printf("TEST FAILED: search_user_by_name_mongo('Pete Johson', req_num, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_user_by_name_mongo('Pete Johson', req_num, &result)\n");
+  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
+	
 
 	buf = search_user_by_id_mongo(159179, req_num, &result);
 	if(strlen(buf) != 888 || result != 1){
-		printf("TEST FAILED: search_user_by_id_mongo(159179, req_num, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_user_by_id_mongo(159179, req_num, &result)\n");
+  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
+
 
 	buf = search_user_by_id_mongo(159178, req_num, &result);
 	if(strlen(buf) != 879 || result != 1){
-		printf("TEST FAILED: search_user_by_id_mongo(159178, req_num, &result)\n");
+		printf("TEST FAILED: ");
+		num_failed++;
 	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+	printf("search_user_by_id_mongo(159178, req_num, &result)\n");
+  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
 	
+
+	//Testing insert_json_from_fd funcion from util.c, which uses users 
+  //generated in this test file
+  //---------------------------------------------------------------------
+
+  //Open the test file
+  int fd;
+  if((fd = open("json_user_test.txt", O_CREAT | O_RDWR, 0666)) == -1){
+    perror("open");
+    return -1;
+  }
+
+  //NOTE: the insert_json_from_fd method does NOT work if fd has just been 
+  //written to...not sure why
+
+  /* Uncomment to write to json_test.txt  initially */
+  //  if(write(fd, buf, 879) != 879){
+  //    perror("write");
+  //    return -1;
+  //  }
+
+  //attempt to read from fd and store bsons in a collection
+  if(insert_json_from_fd(fd, USER_COLLECTION) <= 0){
+		printf("TEST FAILED: ");
+		num_failed++;
+	}
+	else{
+		printf("TEST SUCESS: ");
+	}
+  printf("insert from JSON/n");
+  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
+
+  free(buf);
+
+  //---------------------------------------------------------------------
+
+
+
+
 	//search_user_by_name_cass("rowen");
 	//search_user_by_name_cass("campbell");
 
-	delete_user(11254155);
-	delete_user(159178);
-	delete_user(159179);
+//	delete_user(11254155);
+//	delete_user(159179);
 
+	if(num_failed == 0){
+		printf("ALL TESTS SUCESSFUL\n");
+	}
+	
 	return 0;
 }
 

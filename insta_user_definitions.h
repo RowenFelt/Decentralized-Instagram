@@ -42,6 +42,7 @@ int search_user_by_name_cass(char *username);
 char * search_user_by_id_mongo(uint64_t user_id, int req_num, int *result);
 char * search_user_by_id_cass(uint64_t user_id);
 int insert_user(struct user *new_user);
+int insert_user_from_bson(bson_t *doc);
 int delete_user(uint64_t user_id);
 int pull_user_profile(uint64_t user_id);
 int parse_user_bson(struct user *user, const bson_t *doc);

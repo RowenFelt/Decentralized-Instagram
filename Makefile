@@ -29,16 +29,16 @@ insta_user_tests: insta_user_tests.c insta_user_definitions.so
 insta_user_definitions.o: insta_user_definitions.c 
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(MONGOLINK) $(CASSFLAGS)
 
-insta_user_definitions.so: insta_user_definitions.o cass_user.o insta_mongo_connect.o util.o
+insta_user_definitions.so: insta_user_definitions.o insta_dispatch_definitions.o cass_user.o insta_mongo_connect.o util.o
 	gcc -rdynamic -shared -o $@ $^ $(CASSFLAGS) $(MONGOLINK) $(MONGOCOMP)  
 
 insta_dispatch_tests: insta_dispatch_tests.c insta_dispatch_definitions.so
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOFLAGS)
 
-insta_dispatch_definitions.o: insta_dispatch_definitions.c
+insta_dispatch_definitions.o: insta_dispatch_definitions.c 
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(MONGOLINK)
 
-insta_dispatch_definitions.so: insta_dispatch_definitions.o insta_mongo_connect.o util.o
+insta_dispatch_definitions.so: insta_dispatch_definitions.o insta_user_definitions.o insta_mongo_connect.o util.o cass_user.o 
 	gcc -rdynamic -shared -o $@ $^ $(MONGOCOMP) $(MONGOLINK) 
 
 get_user_mongo: get_user_mongo.c
@@ -47,7 +47,7 @@ get_user_mongo: get_user_mongo.c
 insta_mongo_connect.o: insta_mongo_connect.c
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(MONGOLINK)
 
-util.o: util.c 
+util.o: util.c
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(MONGOLINK)
 
 cass_user.o: cass_user.c

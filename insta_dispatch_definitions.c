@@ -115,27 +115,38 @@ insert_dispatch(struct dispatch *dis) {
 	return mongo_user_teardown(&cn);
 }
 
+int
+insert_dispatch_from_bson(bson_t *doc)
+{
+  //parse to user struct
+  struct dispatch new_dis;
+  int result;
 
-    
-    //Check for a duplicate, and delete if present - Write insert dispatch as bson
-    //and insert user as bson methods that do duplcation checking and delete/overwrite
-    // duplicates -- put these in the user_definitions and dispatch_definitions files.
+  if(parse_dispatch_bson(&new_dis, doc) < 0){
+    printf("error parsing to dispatch struct\n");
+    return -1;
+  }
 
-//int insert_dispatch_from_bson(bson_t *documnet){
-/*	search_dispatch_by_id(dis.dispatch_id, 1, &result);
-  if(result > 0){
-      if(delete_dispatch(dis.dispatch_id ) < 0){
-        printf("Delete Error\n");
+  //search for duplicate by dispatch id
+  if(search_dispatch_by_id(new_dis.dispatch_id, 1, &result) != NULL){
+    if(result > 0){
+      if(delete_dispatch(new_dis.dispatch_id) < 0){
+        printf("deletion of duplicate failed\n");
         return -1;
       }
     }
+  }
 
-  if(!(mongoc_collection_insert_one(cn.collection, &document, NULL, NULL, &error))){ 
-      fprintf(stderr, "Insert Error: %s\n", error.message);  
-      return -1; 
-    } 
+  //insert the dispatch from the new_dis struct  
+  if(insert_dispatch(&new_dis) != 0){
+    printf("insertion from struct failed\n");
+    return -1;
+  }
+
+  return 0;
+
 }
-*/
+
 
 
 int 

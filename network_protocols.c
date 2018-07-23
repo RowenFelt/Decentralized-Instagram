@@ -20,6 +20,7 @@
 #include "insta_user_definitions.h"
 #include "insta_dispatch_definitions.h"
 #include "insta_mongo_connect.h"
+#include "util.h"
 
 static uint64_t read_id(int fd);
   

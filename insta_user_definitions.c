@@ -213,6 +213,37 @@ insert_user(struct user *new_user)
 	return 0;
 }
 
+int 
+insert_user_from_bson(bson_t *doc)
+{
+	//parse to user struct
+	struct user new_user;
+	int result;
+
+	if(parse_user_bson(&new_user, doc) < 0){
+		printf("error parsing to user struct\n");
+		return -1;
+	}
+
+	//search for duplicate by user id
+	if(search_user_by_id_mongo(new_user.user_id, 1, &result) != NULL){
+		if(result > 0){
+			if(delete_user(new_user.user_id) < 0){
+				printf("deletion of duplicate failed\n");
+				return -1;
+			}
+		}
+	}	
+
+	//insert the user from the new_user struct	
+	if(insert_user(&new_user) != 0){
+		printf("insertion from struct failed\n");
+		return -1;
+	}
+
+	return 0;
+
+}
 
 
 int
