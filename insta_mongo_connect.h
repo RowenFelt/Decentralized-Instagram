@@ -10,6 +10,13 @@
 #include <mongoc.h>
 #include <stdint.h>
 
+#define INSTA_DB "insta"
+#define USER_COLLECTION "users"
+#define CASS_TABLE "user"
+#define INSTA_DB "insta"
+#define DISPATCH_COLLECTION "dispatch"
+
+
 struct mongo_user_connection {
   char *uri_string;
   mongoc_uri_t *uri;

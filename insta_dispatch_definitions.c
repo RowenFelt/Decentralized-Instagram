@@ -21,9 +21,6 @@
 #include "util.h"
 
 
-#define INSTA_DB "insta"
-#define DISPATCH_COLLECTION "dispatch"
-
 int
 insert_dispatch(struct dispatch *dis) {
 /* 
