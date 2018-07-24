@@ -24,110 +24,6 @@
 
 static int parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type);
 
-int 
-init_user(void)
-{
-	return 0;
-}
-
-char * 
-search_user_by_name_mongo(char *username, int req_num, int *result)
-{
-	/* 
-	 * search for a user by username in the mongo database
-   * returns a point to a json string containing all
-   * the users found as a result of the query. int
-   * result is updated to reflect the number of users in
-   * the json. If none are found, returns NULL and sets
-   * result to 0. req_num is a cap on the number of results
-   * to search for (i.e. a query would terminate after 
-   * finding a single result if req_num == 1).
-   */
-	struct mongo_user_connection cn;
-	mongoc_cursor_t *cursor;
-	bson_t *query;
-	bson_error_t error;
-	
-	cn.uri_string = "mongodb://localhost:27017";
-	mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
-	query = BCON_NEW (
-		"$or", "[",
-		"{", "username", BCON_UTF8(username), "}",
-		"{", "bio.name", BCON_UTF8(username), "}",
-		"]"	
-	);
-	cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
-	
-	*result = 0; //Default expectation is no results were found
-	char *buf = build_json(cursor, req_num, result);	
-
-	if (mongoc_cursor_error (cursor, &error)) {
-    fprintf (stderr, "An error occurred: %s\n", error.message);
-	}
-	mongoc_cursor_destroy (cursor);
-	bson_destroy (query);
-	mongo_user_teardown(&cn);
-	
-	return buf;
-}
-
-int 
-search_user_by_name_cass(char *username)
-{
-	/* searches for a user in the Cassandra database by username
-   * returns the number of results found */ 	
-	int result = 0;
-	result = get_user_ip_by_username(INSTA_DB, CASS_TABLE, username);
-	return result;
-}
-
-char * 
-search_user_by_id_mongo(uint64_t user_id, int req_num, int *result)
-{
-	/*
-	 * search for a user in the mongoDB list of 
-   * user by user_id. Return a pointer to a 
-   * json sring and update result to the number
-   * of users in the json string. Returns NULL
-   * and sets result to 0 if no users are found.
-   * req_num is a cap on the number of results
-   * to search for (i.e. a query would terminate after 
-   * finding a single result if req_num == 1). 
-   */
-  struct mongo_user_connection cn;
-  mongoc_cursor_t *cursor;
-  bson_t *query;
-  bson_error_t error;
-	
-  cn.uri_string = "mongodb://localhost:27017";
-  mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
-  query = BCON_NEW ("user_id", BCON_INT64(user_id));
-  cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
-	
-	*result = 0; //Default expectation is no results were found
-	char *buf = build_json(cursor, req_num, result); 
-
-  if (mongoc_cursor_error (cursor, &error)) {
-    fprintf (stderr, "An error occurred: %s\n", error.message);
-  }
-  mongoc_cursor_destroy (cursor);
-  bson_destroy (query);
-  mongo_user_teardown(&cn);
- 
-	return buf;
-}
-
-char *
-search_user_by_id_cass(uint64_t user_id)
-{
-	/* searches the cassandra user database by user_id,
-   * returns char * IP address in dotted quad notation
-   * on success, or NULL on failure. The inet must be freed */
-	char *inet = NULL;
-	inet = get_user_ip_by_id(INSTA_DB, CASS_TABLE, user_id);
-	return inet;
-}
-
 int
 insert_user(struct user *new_user)
 {
@@ -213,39 +109,6 @@ insert_user(struct user *new_user)
 	return 0;
 }
 
-int 
-insert_user_from_bson(bson_t *doc)
-{
-	//parse to user struct
-	struct user new_user;
-	int result;
-
-	if(parse_user_bson(&new_user, doc) < 0){
-		printf("error parsing to user struct\n");
-		return -1;
-	}
-
-	//search for duplicate by user id
-	if(search_user_by_id_mongo(new_user.user_id, 1, &result) != NULL){
-		if(result > 0){
-			if(delete_user(new_user.user_id) < 0){
-				printf("deletion of duplicate failed\n");
-				return -1;
-			}
-		}
-	}	
-
-	//insert the user from the new_user struct	
-	if(insert_user(&new_user) != 0){
-		printf("insertion from struct failed\n");
-		return -1;
-	}
-
-	return 0;
-
-}
-
-
 int
 delete_user(uint64_t user_id)
 {
@@ -275,11 +138,156 @@ delete_user(uint64_t user_id)
   return n;
 }
 
-int 
-pull_user_profile(uint64_t user_id)
+
+void
+user_heap_cleanup(struct user *user)
 {
-	/* dependent on the protocols we define for peer to peer connections */
+	/* cleans up heap variables */
+	free(user->bio->name);
+	free(user->bio);	
+	free(user->followers->user_ids);
+	free(user->followers);
+	free(user->following->user_ids);
+	free(user->following);	
+}
+
+
+void
+print_user_struct(struct user *user)
+{
+	char *c_time_string;
+  
+	printf("    user_id: %ld\n", user->user_id);
+	printf("    username: %s\n", user->username);
+	printf("    image_path: %s\n", user->image_path);
+	printf("    bio.name: %s\n", user->bio->name);
+	c_time_string = ctime(&user->bio->date_created);
+	printf("    bio.date_created: %s", c_time_string);
+	c_time_string = ctime(&user->bio->date_modified);
+	printf("    bio.date_modified: %s", c_time_string);
+	printf("    fragmentation: %d\n", user->fragmentation);
+	printf("    followers.direction: %d\n", user->followers->direction);
+	printf("    followers.count: %d\n", user->followers->count);
+	for(int i=0; i<user->followers->count; i++){
+		printf("    follower[%d].user_id: %ld\n", i, user->followers->user_ids[i]);
+	}
+	printf("    following.direction: %d\n", user->following->direction);
+  printf("    following.count: %d\n", user->following->count);
+  for(int i=0; i<user->following->count; i++){
+    printf("    following[%d].user_id: %ld\n", i, user->following->user_ids[i]);
+  }
+}
+
+
+char * 
+search_user_by_name_mongo(char *username, int req_num, int *result)
+{
+	/* 
+	 * search for a user by username in the mongo database
+   * returns a point to a json string containing all
+   * the users found as a result of the query. int
+   * result is updated to reflect the number of users in
+   * the json. If none are found, returns NULL and sets
+   * result to 0. req_num is a cap on the number of results
+   * to search for (i.e. a query would terminate after 
+   * finding a single result if req_num == 1).
+   */
+	struct mongo_user_connection cn;
+	mongoc_cursor_t *cursor;
+	bson_t *query;
+	bson_error_t error;
+	
+	cn.uri_string = "mongodb://localhost:27017";
+	mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
+	query = BCON_NEW (
+		"$or", "[",
+		"{", "username", BCON_UTF8(username), "}",
+		"{", "bio.name", BCON_UTF8(username), "}",
+		"]"	
+	);
+	cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
+	
+	*result = 0; //Default expectation is no results were found
+	char *buf = build_json(cursor, req_num, result);	
+
+	if (mongoc_cursor_error (cursor, &error)) {
+    fprintf (stderr, "An error occurred: %s\n", error.message);
+	}
+	mongoc_cursor_destroy (cursor);
+	bson_destroy (query);
+	mongo_user_teardown(&cn);
+	
+	return buf;
+}
+
+
+char * 
+search_user_by_id_mongo(uint64_t user_id, int req_num, int *result)
+{
+	/*
+	 * search for a user in the mongoDB list of 
+   * user by user_id. Return a pointer to a 
+   * json sring and update result to the number
+   * of users in the json string. Returns NULL
+   * and sets result to 0 if no users are found.
+   * req_num is a cap on the number of results
+   * to search for (i.e. a query would terminate after 
+   * finding a single result if req_num == 1). 
+   */
+  struct mongo_user_connection cn;
+  mongoc_cursor_t *cursor;
+  bson_t *query;
+  bson_error_t error;
+	
+  cn.uri_string = "mongodb://localhost:27017";
+  mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION);
+  query = BCON_NEW ("user_id", BCON_INT64(user_id));
+  cursor = mongoc_collection_find_with_opts(cn.collection, query, NULL, NULL);
+	
+	*result = 0; //Default expectation is no results were found
+	char *buf = build_json(cursor, req_num, result); 
+
+  if (mongoc_cursor_error (cursor, &error)) {
+    fprintf (stderr, "An error occurred: %s\n", error.message);
+  }
+  mongoc_cursor_destroy (cursor);
+  bson_destroy (query);
+  mongo_user_teardown(&cn);
+ 
+	return buf;
+}
+
+
+int 
+handle_user_bson(bson_t *doc)
+{
+	//parse to user struct
+	struct user new_user;
+	int result;
+
+	if(parse_user_bson(&new_user, doc) < 0){
+		printf("error parsing to user struct\n");
+		return -1;
+	}
+
+	//search for duplicate by user id
+	if(search_user_by_id_mongo(new_user.user_id, 1, &result) != NULL){
+		if(result > 0){
+			if(delete_user(new_user.user_id) < 0){
+				printf("deletion of duplicate failed\n");
+				return -1;
+			}
+		}
+	}	
+
+	//insert the user from the new_user struct	
+	if(insert_user(&new_user) != 0){
+		printf("insertion from struct failed\n");
+		return -1;
+	}
+
 	return 0;
+
 }
 
 
@@ -345,6 +353,7 @@ parse_user_bson(struct user *user, const bson_t *doc)
 	return 0;
 }
 
+
 static int 
 parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type)
 {
@@ -389,44 +398,7 @@ parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *
 }
 
 
-void
-user_heap_cleanup(struct user *user)
-{
-	/* cleans up heap variables */
-	free(user->bio->name);
-	free(user->bio);	
-	free(user->followers->user_ids);
-	free(user->followers);
-	free(user->following->user_ids);
-	free(user->following);	
-}
 
-
-void
-print_user_struct(struct user *user)
-{
-	char *c_time_string;
-  
-	printf("    user_id: %ld\n", user->user_id);
-	printf("    username: %s\n", user->username);
-	printf("    image_path: %s\n", user->image_path);
-	printf("    bio.name: %s\n", user->bio->name);
-	c_time_string = ctime(&user->bio->date_created);
-	printf("    bio.date_created: %s", c_time_string);
-	c_time_string = ctime(&user->bio->date_modified);
-	printf("    bio.date_modified: %s", c_time_string);
-	printf("    fragmentation: %d\n", user->fragmentation);
-	printf("    followers.direction: %d\n", user->followers->direction);
-	printf("    followers.count: %d\n", user->followers->count);
-	for(int i=0; i<user->followers->count; i++){
-		printf("    follower[%d].user_id: %ld\n", i, user->followers->user_ids[i]);
-	}
-	printf("    following.direction: %d\n", user->following->direction);
-  printf("    following.count: %d\n", user->following->count);
-  for(int i=0; i<user->following->count; i++){
-    printf("    following[%d].user_id: %ld\n", i, user->following->user_ids[i]);
-  }
-}
 
 
 

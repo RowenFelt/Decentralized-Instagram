@@ -36,17 +36,18 @@ struct personal_data {
 	time_t date_modified;
 };
 
-int init_user(void);
-char * search_user_by_name_mongo(char *username, int req_num, int *result);
-int search_user_by_name_cass(char *username);
-char * search_user_by_id_mongo(uint64_t user_id, int req_num, int *result);
-char * search_user_by_id_cass(uint64_t user_id);
+/* primitives for manually modifying entries and structs */
 int insert_user(struct user *new_user);
-int insert_user_from_bson(bson_t *doc);
 int delete_user(uint64_t user_id);
-int pull_user_profile(uint64_t user_id);
-int parse_user_bson(struct user *user, const bson_t *doc);
 void user_heap_cleanup(struct user *user);
 void print_user_struct(struct user *user);
+
+/* user search functions */
+char * search_user_by_name_mongo(char *username, int req_num, int *result);
+char * search_user_by_id_mongo(uint64_t user_id, int req_num, int *result);
+
+/* higher level definitions used by the server */
+int handle_user_bson(bson_t *doc);
+int parse_user_bson(struct user *user, const bson_t *doc);
 
 #endif /* _INSTA_USER_DEFINITIONS */

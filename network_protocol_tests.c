@@ -51,24 +51,113 @@ int main(int argc, char *argv[])
 		perror("open");
 		return -1;
 	}
+	int child_json = open("network_protocol_test_calls/push_child", O_RDONLY, 0666);
+	if(child_json < 0){
+		perror("open");
+		return -1;
+  }
+	int user_tag_json = open("network_protocol_test_calls/push_user_tag", O_RDONLY, 0666);
+	if(user_tag_json < 0){
+		perror("open");
+		return -1;
+	}
+	int message = open("network_protocol_test_calls/push_message", O_RDONLY, 0666);
+	if(message < 0){
+		perror("open");
+		return -1;
+	}
+	int push_disp = open("network_protocol_test_calls/push_dispatch", O_RDONLY, 0666);
+	if(push_disp < 0){
+		perror("open");
+		return -1;
+	}
+	int push_user = open("network_protocol_test_calls/push_user", O_RDONLY, 0666);
+	if(push_user < 0){
+		perror("open");
+		return -1;
+	}
+
+	/* test pull protocols */	
+	int result = 0;
 	write(fd, "pull all***** 1234\n", 19);
-	parse_server_command(all, fd);
+	result = parse_server_command(all, fd);
+	if(result != 2){
+		printf("TEST FAILED: pull all*****\n");
+	}
 	write(fd, "\n", 1);
 	write(fd, "pull child*** 6666\n", 19);
-	parse_server_command(child, fd);
+	result = parse_server_command(child, fd);
+	if(result != 3){
+		printf("TEST FAILED: pull child***\n");
+	}
 	write(fd, "\n", 1);
 	write(fd, "pull dispatch 1\n", 16);
-	parse_server_command(dispatch, fd); 
+	result = parse_server_command(dispatch, fd); 
+	if(result != 1){
+		printf("TEST FAILED: pull dispatch\n");
+	}
 	write(fd, "\n", 1);
 	write(fd, "pull user**** 9999\n", 19);
-	parse_server_command(user, fd);
+	result = parse_server_command(user, fd);
+	if(result != 1){
+		printf("TEST FAILED: pull user****\n");
+	}
 	write(fd, "\n", 1);
 	write(fd, "pull user_tag 1\n", 16);
-	parse_server_command(user_tags, fd);
+	result = parse_server_command(user_tags, fd);
+	if(result != 3){
+		printf("TEST FAILED: pull user_tag\n");
+	}
 	write(fd, "\n", 1);
 	write(fd, "pull tags**** lolcats\n", 22);
-	parse_server_command(tags, fd);
-	write(fd, "\n", 1);
+	result = parse_server_command(tags, fd);
+	if(result != 1){
+		printf("TEST FAILED: pull tags****\n");
+	}
+
+	
+	/* test push protocols */
+	result = parse_server_command(child_json, fd);
+	search_dispatch_by_id(123, -1, &result);
+	if(result != 1){
+		printf("TEST FAILED: push child***\n");
+	}
+	delete_dispatch(123);	
+	result = parse_server_command(user_tag_json, fd);
+	search_dispatch_by_id(49468, -1, &result);
+	if(result != 1){
+		printf("TEST FAILED: push user_tag\n");
+	} 
+	delete_dispatch(49468);
+	result = parse_server_command(message, fd);
+	search_dispatch_by_id(7381, -1, &result);
+	if(result != 1){
+		printf("TEST FAILED: push message*\n");
+	}
+	delete_dispatch(7381);
+	result = parse_server_command(push_disp, fd);
+	search_dispatch_by_id(9965, -1, &result);
+	if(result != 1){
+		printf("TEST FAILED: push dispatch\n");
+	}
+	delete_dispatch(9965);
+	result = parse_server_command(push_user, fd);
+	search_user_by_id_mongo(69696969, -1, &result);
+	if(result != 1){
+		printf("TEST FAILED: push user***\n");
+	}
+	delete_user(69696969);
 	close(fd);	
+	close(all);
+	close(child);
+	close(dispatch);
+	close(user);
+	close(user_tags);
+	close(tags);
+	close(child_json);
+	close(user_tag_json);
+	close(message);
+	close(push_disp);
+	close(push_user);
 	return 0;
 }
