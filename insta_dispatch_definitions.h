@@ -18,7 +18,7 @@
 struct dispatch {
 	struct dispatch_body *body;			
 	uint64_t user_id;							
-	time_t timestamp;									
+	time_t timestamp;	
 	uint32_t audience_size;
 	uint64_t audience[MAX_GROUP_SIZE];	
 	uint32_t num_tags;
@@ -26,7 +26,7 @@ struct dispatch {
 	uint32_t num_user_tags;
 	uint64_t user_tags[MAX_NUM_TAGS];
 	struct dispatch_parent *parent;	
-	uint32_t fragmentation;												
+	uint32_t fragmentation;						
 	uint64_t dispatch_id; 
 };
 
@@ -40,21 +40,19 @@ struct dispatch_parent {
 	uint64_t id; 
 };
 
+/* insert and delete methods for Mongo */
 int insert_dispatch(struct dispatch *dis);
-int insert_dispatch_from_bson(bson_t *doc);
-int create_dispatch(void);
 int delete_dispatch(uint64_t dispatch_id);
+/* search Mongo dispatch collection */
 char *search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result);
-char *search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, 
-																				int audience_size, int req_num, int *result);
+char *search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, 						      	int audience_size, int req_num, int *result);
 char *search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result);
-char *search_dispatch_by_tags(const char* query, int req_num, int *result);
+char *search_dispatch_by_tags(const char *query, int req_num, int *result);
 char *search_dispatch_by_user_tags(uint64_t query, int req_num, int *result);
+/* transition between Mongo readable bson, and programmer optimized dispatch structs */
 int parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch);
-void dispatch_heap_cleanup(struct dispatch *dis);
 int print_dispatch_struct(struct dispatch *dis);
-int update_feed(void);
-
-
+void dispatch_heap_cleanup(struct dispatch *dis);
+int handle_dispatch_bson(bson_t *doc);
 
 #endif /* _INSTA_DEFINITIONS */
