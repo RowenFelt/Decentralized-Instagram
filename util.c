@@ -121,7 +121,7 @@ insert_json_from_fd(int fd, char *collection_name){
 		}
 	
 		else if(strcmp(collection_name, DISPATCH_COLLECTION) == 0){
-			if(insert_dispatch_from_bson(&document) < 0){
+			if(handle_dispatch_bson(&document) < 0){
 				printf("insertion failed\n");
 				return -1;
 			}	
