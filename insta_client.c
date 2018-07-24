@@ -15,6 +15,8 @@
 #include <time.h>
 
 #include "insta_user_definitions.h" 
+#include "insta_mongo_connect.h"
+#include "cass_user.h"
 
 #define BUF_SIZE 4096
 
@@ -32,7 +34,7 @@ int main(int argc, char *argv[])
     dest_port = argv[2];
 
 		int user_id = atoi(dest_user);
-		dest_hostname = search_user_by_id_cass(user_id);	
+		dest_hostname = get_user_ip_by_id(INSTA_DB, USER_COLLECTION, user_id);	
 
     /* create a socket */
     conn_fd = socket(PF_INET, SOCK_STREAM, 0);

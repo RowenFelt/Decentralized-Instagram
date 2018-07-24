@@ -114,7 +114,7 @@ insert_json_from_fd(int fd, char *collection_name){
 		}
 		
 		if(strcmp(collection_name, USER_COLLECTION) == 0){
-			if(insert_user_from_bson(&document) < 0){
+			if(handle_user_bson(&document) < 0){
 				printf("insertion failed\n");
 				return -1;
 			}	
