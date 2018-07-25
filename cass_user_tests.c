@@ -22,29 +22,64 @@
 #define KEYSPACE "insta"
 #define TABLE "user"
 
+struct user_addition {
+	uint64_t id;
+	char name[20];
+	char ip[20];
+};
+
 int main(int argc, char *argv[])
 {
 	char *id;
+	uint64_t *user_ids;
+	int result = 0;
+	int failed = 0;
+	int n = 0;
 
-  printf("initialize keyspace and table\n");
 	keyspace_table_init(KEYSPACE, TABLE);
 
-	printf("add_user(12521512, 'rowen', '4.5.6.7')\n");
-	add_user(12521512, "rowen", "4.5.6.7");
-	
-	printf("add_user(713717, 'rowen', '1.2.3.4')\n");
-	add_user(713717, "rowen", "1.2.3.4");
-	
-	printf("add_user(1435, 'ricker', '140.233.20.181')\n");
-	add_user(1435, "ricker", "140.233.20.181");
-	add_user(1485, "ellen", "140.233.20.153");
-	
-	printf("get_user_ip_by_username(KEYSPACE, TABLE, 'rowen')\n");
-	get_user_ip_by_username(KEYSPACE, TABLE, "rowen");
+	struct user_addition tests[] = {
+		{12521512, "rowen", "4.5.6.7"},
+		{713717, "rowen", "1.2.3.4"},
+		{1435, "ricker", "140.233.20.181"},
+		{1485, "ellen", "140.233.20.153"}
+	};
 
-	printf("get_user_ip_by_id(KEYSPACE, TABLE, 713717)\n");
+	for(int i = 0; i < 4; i++){
+		n = add_user(tests[i].id, tests[i].name, tests[i].ip);
+		if(n != 0){
+			printf("TEST FAILED: add_user\n");
+			failed += 1;
+		}
+		else{
+			printf("TEST SUCCESSFUL: add_user\n");
+		}
+	}
+		
+	user_ids = get_user_id_by_username(KEYSPACE, TABLE, "rowen", &result);	
+	if(user_ids[0] != 713717 || user_ids[1] != 12521512){
+		printf("TEST FAILED: get_user_id_by_username\n");
+		failed += 1;
+	}	
+	else{
+		printf("TEST SUCCESSFUL: get_user_id_by_username\n");
+	}
+
 	id = get_user_ip_by_id(KEYSPACE, TABLE, 713717);
-	printf("id = %s\n", id);
+	if(memcmp(id, "1.2.3.4", 7) != 0){
+		printf("TEST FAILED: get_user_ip_by_id\n");
+		failed += 1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: get_user_ip_by_id\n");
+	}
+
+	if(failed != 0){
+		printf("%d TESTS FAILED\n", failed);
+	}
+	else{
+		printf("ALL TESTS SUCCESSFUL\n");
+	}	
 	free(id);
 	return 0;
 }

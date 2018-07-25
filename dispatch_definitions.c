@@ -30,8 +30,8 @@ insert_dispatch(struct dispatch *dis) {
   bson_t *dispatch; 
   bson_t child;    
   bson_error_t error;
-  char buf[10];
-  time_t rawtimestamp;
+  char buf[10]; //number of bytes in max index of array followers
+  time_t timestamp;
 
   struct mongo_user_connection cn;
   cn.uri_string = "mongodb://localhost:27017";
@@ -50,17 +50,17 @@ insert_dispatch(struct dispatch *dis) {
 
   /* Dispatch body comprised of media and text */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "body", &child);
-  BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path); //path to dispatch media
-  BSON_APPEND_UTF8(&child, "text", dis->body->text); //the text/caption for the dispatch
+  BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path);
+  BSON_APPEND_UTF8(&child, "text", dis->body->text); 
   
 	bson_append_document_end(dispatch, &child); 
 	BSON_APPEND_INT64(dispatch, "user_id", dis->user_id);
-  rawtimestamp = time(NULL);
-  if(rawtimestamp == (time(NULL) - 1)){
+  timestamp = time(NULL);
+  if(timestamp == (time(NULL) - 1)){
     (void) fprintf(stderr, "Faulty current time\n");
-    exit(EXIT_FAILURE);
+		return -1;
   }
-  dis->timestamp = rawtimestamp;  
+  dis->timestamp = timestamp;  
   BSON_APPEND_TIME_T(dispatch, "timestamp", dis->timestamp);
   BSON_APPEND_INT32(dispatch, "audience_size", dis->audience_size); //who sees dispatch
   /* Store specific audience for a group message */

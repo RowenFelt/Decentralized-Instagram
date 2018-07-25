@@ -37,7 +37,8 @@ int keyspace_table_init(char *keyspace, char *table){
   /* CREATE KEYSPACE AND TABLE */
 
   /* Create keyspace */
-	sprintf(create_keyspace_query, "CREATE KEYSPACE %s WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 2}", keyspace);
+	sprintf(create_keyspace_query, "CREATE KEYSPACE %s WITH replication = \
+					{'class': 'SimpleStrategy', 'replication_factor' : 2}", keyspace);
   create_keyspace = cass_statement_new(create_keyspace_query, 0);
   statement_future = cass_session_execute(connection.session, create_keyspace);
 
@@ -79,7 +80,8 @@ int add_user(uint64_t user_id, char *username, char *ip){
 
 	session_connection(&connection);
 
-  add_user_statement= cass_statement_new("INSERT INTO insta.user (user_id, username, ip_addr) VALUES ( ?, ?, ?)", 3);
+  add_user_statement= cass_statement_new("INSERT INTO insta.user \
+		(user_id, username, ip_addr) VALUES ( ?, ?, ?)", 3);
 
 	cass_statement_bind_int64(add_user_statement, 0, (int64_t) user_id);
 	cass_inet_from_string(ip, &ip_inet);
@@ -92,7 +94,7 @@ int add_user(uint64_t user_id, char *username, char *ip){
 
   if(connection.err_code != CASS_OK){
 		printf("Insertion status: %s\n", cass_error_desc(connection.err_code));
-		return (int) connection.err_code;
+		return connection.err_code;
 	}
 
   /* CLEANUP OF CASSANDRA VARS */
@@ -103,7 +105,7 @@ int add_user(uint64_t user_id, char *username, char *ip){
 }
 
 
-int get_user_ip_by_username(char *keyspace, char *table, char *username){
+uint64_t *get_user_id_by_username(char *keyspace, char *table, char *username, int *count){
 	/* searches for a user using their username, prints IP address 
 	 * and returns number of results */
 
@@ -116,15 +118,15 @@ int get_user_ip_by_username(char *keyspace, char *table, char *username){
 	CassStatement *get_user;
 	CassFuture *statement_future;
 	const CassResult *user_query_result;
-	const CassValue *cass_ip;
-	CassInet ip;
-	char ip_string[16];
-	int result;
+	const CassValue *user_id;
+  int64_t id;
+	uint64_t * result;
+	int i;
   
 	session_connection(&connection);
 
   /* BUILD AND EXECUTE USER QUERY */
-  return_column = "ip_addr";
+  return_column = "user_id";
 	query_column = "username"; 
   query_target = username;
 
@@ -138,7 +140,7 @@ int get_user_ip_by_username(char *keyspace, char *table, char *username){
   cass_statement_free(get_user);
 	if((connection.err_code = cass_future_error_code(statement_future)) !=  CASS_OK){
     printf("Statement result: %s\n", cass_error_desc(connection.err_code));
-		return connection.err_code;
+		return NULL;
 	}
 
   user_query_result = cass_future_get_result(statement_future);
@@ -148,24 +150,27 @@ int get_user_ip_by_username(char *keyspace, char *table, char *username){
     exit(2);
   }
 	
-	result = cass_result_row_count(user_query_result);
-	
-	if(result == 0){
+	*count = cass_result_row_count(user_query_result);
+	result = malloc(sizeof(uint64_t) * (*count));
+	if(result == NULL){
+		perror("malloc");
+		return result;
+	}
+	if(count ==  0){
 		printf("no results found for username: %s\n", username);
-		return 0;
+		return NULL;
 	}
 	CassIterator *iterator = cass_iterator_from_result(user_query_result);
+	i = 0;
 	while(cass_iterator_next(iterator)) {
 		const CassRow *row = cass_iterator_get_row(iterator);
-		cass_ip = cass_row_get_column_by_name(row, return_column);
-
-		if(cass_value_get_inet(cass_ip, &ip) != CASS_OK){
+		user_id = cass_row_get_column_by_name(row, return_column);
+		
+		if(cass_value_get_int64(user_id, &id) != CASS_OK){
 			printf("Error converting cass value to standard value\n");
 		}
-
-		cass_inet_string(ip, ip_string);
-
-	  printf("username:%s ip address: %s\n", query_target, ip_string);	
+		result[i] = (uint64_t) id;
+		i++; 
 	}
 	cass_iterator_free(iterator);
 
@@ -240,11 +245,8 @@ char * get_user_ip_by_id(char *keyspace, char *table, uint64_t user_id){
 
 		
 		cass_inet_string(ip, ip_string);
-
-	  printf("user_id:%s ip address: %s\n", query_target, ip_string);	
 	}
 	cass_iterator_free(iterator);
-
 	tear_down_connection(&connection); 
 	return ip_string;
 }
