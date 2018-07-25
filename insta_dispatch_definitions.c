@@ -39,8 +39,7 @@ insert_dispatch(struct dispatch *dis) {
 
   mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	
-  //check if dis is a dupicate already stored in the the database 
-  //(in which case duplicate will remain equal to 1)
+  //check for duclication - don't insert if duplicate present 
   int duplicate = 0;
   int req_num = -1; 
   search_dispatch_by_id(dis->dispatch_id, req_num, &duplicate); 	
@@ -51,8 +50,8 @@ insert_dispatch(struct dispatch *dis) {
 
   /* Dispatch body comprised of media and text */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "body", &child);
-  BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path); //path to dispatch media
-  BSON_APPEND_UTF8(&child, "text", dis->body->text); //the text/caption for the dispatch
+  BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path);
+  BSON_APPEND_UTF8(&child, "text", dis->body->text);
   
 	bson_append_document_end(dispatch, &child); 
 	BSON_APPEND_INT64(dispatch, "user_id", dis->user_id);
@@ -63,7 +62,7 @@ insert_dispatch(struct dispatch *dis) {
   }
   dis->timestamp = rawtimestamp;  
   BSON_APPEND_TIME_T(dispatch, "timestamp", dis->timestamp);
-  BSON_APPEND_INT32(dispatch, "audience_size", dis->audience_size); //who sees dispatch
+  BSON_APPEND_INT32(dispatch, "audience_size", dis->audience_size); 
   /* Store specific audience for a group message */
   if (dis->audience_size > MAX_GROUP_SIZE){
     return -1;
@@ -117,8 +116,9 @@ int
 delete_dispatch(uint64_t dispatch_id){
 /* 
  * Takes a dispatch id, queries the 'dispatch' collection for 
- * a matching dispatch. If found, such a dispatch is deleted
- * and 0 is returned. If not found and deleted, then -1 is returned
+ * a matching dispatch and deletes it.
+ * Returns 0 if the dispatch is sucessfully deteled, otherwise 
+ * -1 is returned
  */
   bson_t *target_dispatch;  
 	bson_t reply;
@@ -251,7 +251,6 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
 
   target_dispatch = bson_new();
   
-	/* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(target_dispatch, "dispatch_parent", &child);
   BSON_APPEND_INT32(&child, "type", (int32_t) 1);
   BSON_APPEND_INT64(&child, "id", dispatch_id); 
@@ -309,8 +308,8 @@ search_dispatch_by_user_tags(uint64_t query, int req_num, int *result){
  * limit of dispatches to query for, and a pointer to 
  * an integer to be updated with the number of 
  * dispatches matching the dispatch id provided.
- * Returns a pointer to a JSON string containing the 
- * results from the  query.
+ * Returns a pointer to a JSON string w/ results 
+ * from the  query.
  */
   bson_t *target_dispatch;
   mongoc_cursor_t *cursor;
@@ -341,7 +340,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 /*
  * Takes a pointer to a dispatch struct and fills it with the
  * contents of a bson document by parsing the contents of the
- * document. Returns -1 upon an error, otherwise, returns 0.
+ * document.
+ * Returns -1 upon an error, otherwise, returns 0.
  */
 	struct dispatch_body *body;
 	struct	dispatch_parent *parent;
@@ -362,10 +362,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	}	
 
 
-	/* bind a bson iterator to the bson document that was found from our query */
 	bson_iter_init(&iter, bson_dispatch);
 
-	/* Fill dispatch_body struct */
 	if(bson_iter_find_descendant(&iter, "body.media_path", &sub_iter)){
 		media_path = bson_iter_utf8(&sub_iter, &media_path_len);
 		if((body->media_path = malloc(media_path_len)) == NULL){
@@ -389,35 +387,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	if(bson_iter_find(&iter, "timestamp")){
 		dis->timestamp = bson_iter_time_t(&iter);
 	}
-	/*
-	 * Pulling data from the audience array 
-	 */
-	if(bson_iter_find(&iter, "audience_size")){
-		dis->audience_size = bson_iter_int32(&iter);
-	}
-	if(bson_iter_find(&iter, "audience")){
-		/* Check that current itter object holds array */
-		if(BSON_ITER_HOLDS_ARRAY(&iter) && dis->audience_size != 0){
-			/* pull bson data in to array audience_array */
-			const uint8_t *array = NULL; 
-			uint32_t array_len = 0;
-			int i = 0;
-			bson_iter_array(&iter, &array_len, &array);
-			/* craft a new bson from our array we just pulled data to */			
-			bson_t *audience_array = bson_new_from_data(array, array_len);
-			/* initialize sub_iter to the new bson doc we just crafted */			
-			bson_iter_init(&sub_iter, audience_array);
-			/* itterate through the new bson document and pull data (where key == index) */
-			while(bson_iter_next(&sub_iter) && i < dis->audience_size){
-				dis->audience[i] = bson_iter_int64(&sub_iter);
-				i++;
-			}
-		bson_destroy(audience_array);
-		}
-	}
-	/*
-	 * Pulling data from the tags array
-	 */ 
+	
+	//Pulling data from the tags array
 	if(bson_iter_find(&iter, "num_tags")){
 		dis->num_tags = bson_iter_int32(&iter);
 	}
@@ -436,9 +407,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		bson_destroy(tags_array);
 		}
 	}
-	/*
-	 * Pulling data from the user_tags array 
-	 */
+	
+	//Pulling data from the user_tags array 
 	if(bson_iter_find(&iter, "num_user_tags")){
 		dis->num_user_tags = bson_iter_int32(&iter);
 	}
@@ -458,7 +428,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		bson_destroy(user_tags_array);
 		}
 	}
-	/* Fill dispatch_parent struct */
+
+	// Fill dispatch_parent struct 
 	if(bson_iter_find_descendant(&iter, "dispatch_parent.type", &sub_iter)){
 		parent->type = bson_iter_int32(&sub_iter);
 	}
@@ -525,13 +496,11 @@ print_dispatch_struct(struct dispatch *dis){
 
 void
 dispatch_heap_cleanup(struct dispatch *dis){
-/* Free's all of the memory associated with pointers related
- * to the storage of a dispach struct that are initialized 
- * when populating the struct in the parse_dispatch_bson
- * function. This function should be called after calling
- * the parse_dispatch_bson function, once the user is finished
- * referencing the memory associated with the bson struct
- * that was populated.
+/* Free's memory associated with pointers related
+ * to dispach struct that are initialized in
+ * parse_dispatch_bson
+ * This function should be called after calling
+ * the parse_dispatch_bson function
  */
 	free(dis->body->media_path);
 	free(dis->body->text);
@@ -548,7 +517,7 @@ handle_dispatch_bson(bson_t *doc)
  * uses the dispatch_id and search_dispatch_by_id function 
  * to identify and delete duplicate dispatches, inserting the
  * new dispatch in the process.
- * This function returns 0 upon success, -1 otherwise.
+ * Returns 0 upon success, -1 otherwise.
  */
  
 	//parse to user struct
@@ -575,6 +544,9 @@ handle_dispatch_bson(bson_t *doc)
     printf("insertion from struct failed\n");
     return -1;
   }
+
+	//cleanup the memory associated with the new dispatch we made
+	dispatch_heap_cleanup(&new_dis);
 
   return 0;
 
