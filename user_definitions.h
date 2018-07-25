@@ -1,5 +1,5 @@
 /* 
- * insta_user_definitions.h
+ * user_definitions.h
  * Definitions for user objects
  * Authors: Rowen Felt and Campbell Boswell
  */

@@ -17,10 +17,9 @@
 #include <pthread.h>
 #include <time.h>
 #include "network_protocols.h"
-#include "insta_user_definitions.h"
-#include "insta_dispatch_definitions.h"
-#include "insta_mongo_connect.h"
-#include "util.h"
+#include "user_definitions.h"
+#include "dispatch_definitions.h"
+#include "mongo_connect.h"
 
 static uint64_t read_id(int fd);
   

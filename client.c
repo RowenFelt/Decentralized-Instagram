@@ -1,5 +1,5 @@
 /*
- * insta-client.c
+ * client.c
  * Authors: Rowen Felt and Dylan Mortimer
  */
 
@@ -14,8 +14,8 @@
 #include <pthread.h>
 #include <time.h>
 
-#include "insta_user_definitions.h" 
-#include "insta_mongo_connect.h"
+#include "user_definitions.h" 
+#include "mongo_connect.h"
 #include "cass_user.h"
 
 #define BUF_SIZE 4096

@@ -1,5 +1,5 @@
 /*
- * insta_tcp_server.c
+ * tcp_server.c
  * Authors: Rowen Felt and Campbell Boswell
  */
 

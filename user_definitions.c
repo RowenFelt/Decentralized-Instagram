@@ -1,5 +1,5 @@
 /*
- * insta_user_definitions.c
+ * user_definitions.c
  * user object and methods for Mongo implementation
  * Authors: Rowen Felt and Campbell Boswell
  */
@@ -16,10 +16,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
-#include "insta_mongo_connect.h"
+#include "mongo_connect.h"
 #include "cass_user.h"
-#include "insta_user_definitions.h"
-#include "util.h"
+#include "user_definitions.h"
 
 
 static int parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type);

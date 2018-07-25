@@ -5,8 +5,8 @@
  */
 
 #include <stdlib.h>
-#include "insta_user_definitions.h"
-#include "insta_dispatch_definitions.h"
+#include "user_definitions.h"
+#include "dispatch_definitions.h"
 
 #define INSTA_PROTOCOL_SIZE 14
 #define INSTA_PROTOCOL_NUM 11

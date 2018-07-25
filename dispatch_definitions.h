@@ -1,5 +1,5 @@
 /*
- * insta_dispatch_definitions.h
+ * dispatch_definitions.h
  * Definitions for the dispatch objects
  * Authors: Rowen Felt and Campbell Boswell
 */

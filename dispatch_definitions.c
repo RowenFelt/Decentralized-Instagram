@@ -1,5 +1,5 @@
 /*
- * insta_dispatch_definitions.c
+ * dispatch_definitions.c
  * dispatch object and methods for Mongo implementation
  * Authors: Rowen Felt and Campbell Boswell
  */
@@ -16,9 +16,8 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
-#include "insta_mongo_connect.h"
-#include "insta_dispatch_definitions.h"
-#include "util.h"
+#include "mongo_connect.h"
+#include "dispatch_definitions.h"
 
 
 int

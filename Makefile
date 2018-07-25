@@ -5,7 +5,7 @@ CASSFLAGS=-L$(HOME)/instaclone/cpp-driver/build -I$(HOME)/instaclone/cpp-driver/
 
 .PHONY: all
 
-all: practice cass_user.so get_user_mongo insta_user_definitions.o insta_user_definitions.so insta_dispatch_definitions.o insta_dispatch_definitions.so insta_mongo_connect.o insta_user_tests insta_dispatch_tests insta_tcp_server insta_client network_protocols.o network_protocols.so network_protocol_tests util.o
+all: practice cass_user.so get_user_mongo user_definitions.o user_definitions.so dispatch_definitions.o dispatch_definitions.so mongo_connect.o user_tests dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o
 
 network_protocol_tests: network_protocol_tests.c network_protocols.so
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOLINK) $(MONGOCOMP)
@@ -13,41 +13,41 @@ network_protocol_tests: network_protocol_tests.c network_protocols.so
 network_protocols.o: network_protocols.c 
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(CASSFLAGS)
 
-network_protocols.so: network_protocols.o insta_user_definitions.o insta_dispatch_definitions.o insta_mongo_connect.o cass_user.o util.o
+network_protocols.so: network_protocols.o user_definitions.o dispatch_definitions.o mongo_connect.o cass_user.o 
 	gcc -rdynamic -shared -o $@ $^ $(MONGOLINK) $(MONGOCOMP) $(CASSFLAGS)
 
-insta_client: insta_client.c insta_user_definitions.so
+client: client.c user_definitions.so
 	gcc $(CFLAGS) -o $@ $^ $(MONGOCOMP) $(MONGOLINK) $(CASSFLAGS)
 
-insta_tcp_server: insta_tcp_server.c
+tcp_server: tcp_server.c
 	gcc $(CFLAGS) -o $@ $^ 
 
-insta_user_tests: insta_user_tests.c insta_user_definitions.so
+user_tests: user_tests.c user_definitions.so
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOCOMP) $(MONGOLINK)
 
-insta_user_definitions.o: insta_user_definitions.c 
+user_definitions.o: user_definitions.c 
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(CASSFLAGS)
 
-insta_user_definitions.so: insta_user_definitions.o insta_dispatch_definitions.o cass_user.o insta_mongo_connect.o util.o
+user_definitions.so: user_definitions.o dispatch_definitions.o cass_user.o mongo_connect.o 
 	gcc -rdynamic -shared -o $@ $^ $(CASSFLAGS) $(MONGOLINK) $(MONGOCOMP)  
 
-insta_dispatch_tests: insta_dispatch_tests.c insta_dispatch_definitions.so
+dispatch_tests: dispatch_tests.c dispatch_definitions.so
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOCOMP) $(MONGOLINK)
 
-insta_dispatch_definitions.o: insta_dispatch_definitions.c 
+dispatch_definitions.o: dispatch_definitions.c 
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) 
 
-insta_dispatch_definitions.so: insta_dispatch_definitions.o insta_user_definitions.o insta_mongo_connect.o util.o cass_user.o 
+dispatch_definitions.so: dispatch_definitions.o user_definitions.o mongo_connect.o  cass_user.o 
 	gcc -rdynamic -shared -o $@ $^ $(MONGOCOMP) $(MONGOLINK) 
 
 get_user_mongo: get_user_mongo.c
 	gcc $(CFLAGS) -o $@ $^ $(MONGOCOMP) $(MONGOLINK) 
 
-insta_mongo_connect.o: insta_mongo_connect.c
+mongo_connect.o: mongo_connect.c
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(MONGOLINK)
 
 util.o: util.c
-	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) 
+	gcc $(CFLAGS) -fPIC -c -o $@ $^ 
 
 cass_user.o: cass_user.c
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(CASSFLAGS) $(MONGOCOMP)
@@ -60,4 +60,4 @@ practice: practice.c cass_user.so
 
 .PHONY: clean
 clean:
-	rm -f practice cass_add_user cass_get_user cass_init cass_user.so cass_user.o util.o get_user_mongo insta_mongo_connect.o insta_user_definitions.o insta_user_tests insta_user_definitions.so insta_dispatch_definitions.o insta_dispatch_definitions.so insta_dispatch_tests insta_tcp_server insta_client network_protocols.o network_protocols.so network_protocol_tests util.o
+	rm -f practice cass_add_user cass_get_user cass_init cass_user.so cass_user.o util.o get_user_mongo mongo_connect.o user_definitions.o user_tests user_definitions.so dispatch_definitions.o dispatch_definitions.so dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o

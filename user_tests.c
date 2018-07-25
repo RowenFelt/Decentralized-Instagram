@@ -1,5 +1,5 @@
 /*
- * insta_user_tests.c
+ * user_tests.c
  * tests basic insta user methods using mongoDB and cassandra
  * Authors: Rowen Felt and Campbell Boswell
  */
@@ -8,9 +8,9 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
-#include "insta_user_definitions.h"
+#include "user_definitions.h"
 #include "util.c"
-#include "insta_mongo_connect.h"
+#include "mongo_connect.h"
 
 int main(int argc, char *argv[])
 {

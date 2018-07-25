@@ -79,40 +79,66 @@ int main(int argc, char *argv[])
 
 	/* test pull protocols */	
 	int result = 0;
+	int failed = 0;
 	write(fd, "pull all***** 1234\n", 19);
 	result = parse_server_command(all, fd);
 	if(result != 2){
 		printf("TEST FAILED: pull all*****\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull all*****\n");
 	}
 	write(fd, "\n", 1);
 	write(fd, "pull child*** 6666\n", 19);
 	result = parse_server_command(child, fd);
 	if(result != 3){
 		printf("TEST FAILED: pull child***\n");
+		failed+=1;
 	}
+	else{
+		printf("TEST SUCCESSFUL: pull child***\n");
+	}
+
 	write(fd, "\n", 1);
 	write(fd, "pull dispatch 1\n", 16);
 	result = parse_server_command(dispatch, fd); 
 	if(result != 1){
 		printf("TEST FAILED: pull dispatch\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull dispatch\n");
 	}
 	write(fd, "\n", 1);
 	write(fd, "pull user**** 9999\n", 19);
 	result = parse_server_command(user, fd);
 	if(result != 1){
 		printf("TEST FAILED: pull user****\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull user****\n");
 	}
 	write(fd, "\n", 1);
 	write(fd, "pull user_tag 1\n", 16);
 	result = parse_server_command(user_tags, fd);
 	if(result != 3){
 		printf("TEST FAILED: pull user_tag\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull user_tag\n");
 	}
 	write(fd, "\n", 1);
 	write(fd, "pull tags**** lolcats\n", 22);
 	result = parse_server_command(tags, fd);
 	if(result != 1){
 		printf("TEST FAILED: pull tags****\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull tags****\n");
 	}
 
 	
@@ -121,30 +147,50 @@ int main(int argc, char *argv[])
 	search_dispatch_by_id(123, -1, &result);
 	if(result != 1){
 		printf("TEST FAILED: push child***\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull child***\n");
 	}
 	delete_dispatch(123);	
 	result = parse_server_command(user_tag_json, fd);
 	search_dispatch_by_id(49468, -1, &result);
 	if(result != 1){
 		printf("TEST FAILED: push user_tag\n");
-	} 
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull user_tag\n");
+	}
 	delete_dispatch(49468);
 	result = parse_server_command(message, fd);
 	search_dispatch_by_id(7381, -1, &result);
 	if(result != 1){
 		printf("TEST FAILED: push message*\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull message*\n");
 	}
 	delete_dispatch(7381);
 	result = parse_server_command(push_disp, fd);
 	search_dispatch_by_id(9965, -1, &result);
 	if(result != 1){
 		printf("TEST FAILED: push dispatch\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull dispatch\n");
 	}
 	delete_dispatch(9965);
 	result = parse_server_command(push_user, fd);
 	search_user_by_id_mongo(69696969, -1, &result);
 	if(result != 1){
 		printf("TEST FAILED: push user***\n");
+		failed+=1;
+	}
+	else{
+		printf("TEST SUCCESSFUL: pull user***\n");
 	}
 	delete_user(69696969);
 	close(fd);	
@@ -159,5 +205,11 @@ int main(int argc, char *argv[])
 	close(message);
 	close(push_disp);
 	close(push_user);
+	if(failed == 0){
+		printf("All tests passed\n");
+	}
+	else{
+		printf("%d tests failed\n", failed);
+	}
 	return 0;
 }

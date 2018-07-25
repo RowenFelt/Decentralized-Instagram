@@ -1,6 +1,6 @@
 /*
- * insta_dispatch_tests.c
- * Temporary testing file for insta_dispatch_definitions.c methods
+ * dispatch_tests.c
+ * Temporary testing file for dispatch_definitions.c methods
  */
 
 #include <mongoc.h>
@@ -15,15 +15,14 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
-#include "insta_dispatch_definitions.h"
-#include "util.h"
-#include "insta_mongo_connect.h"
+#include "dispatch_definitions.h"
+#include "mongo_connect.h"
 
 int
 main(int argc, char* argv[])
 {
 	/*
-	 * Testing insert_dispatch method in insta_dispatch_definitions.c 
+	 * Testing insert_dispatch method in dispatch_definitions.c 
 	 */
 
 
