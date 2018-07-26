@@ -67,14 +67,14 @@ parse_server_command(int in, int out){
 static uint64_t 
 read_id(int fd)
 {
-	char str[20];
+	char str[LARGE_ID_SIZE];
 	uint64_t id;
 
-	memset(str, '\0', 20);
-	read(fd, str, 20);
+	memset(str, '\0', LARGE_ID_SIZE);
+	read(fd, str, LARGE_ID_SIZE);
 	id = strtoll((str), NULL, 10);
 	if(id == LLONG_MIN || id == LLONG_MAX || id == 0 ){
-		perror("Invalid arguments for pull user: ");
+		printf("invalid ID in protocol field\n");
 		return -1;
   }
 	return id;
@@ -227,9 +227,10 @@ pull_tags(int in, int out){
 }
 
 
-/* 
- * Receives a pushed json child dispatch and inserts it into the database
- */ 
+/* TODO these functions all do the same thing,
+ * but we chose to keep them because in the
+ * future they will have to push updates to the
+ * client under different conditions. */
 
 int
 push_child(int fd, int out)
@@ -240,9 +241,6 @@ push_child(int fd, int out)
 }
 
 
-/* 
- * Receives a pushed dispatch with user_tags and inserts it into the database
- */ 
 int
 push_user_tag(int fd, int out)
 {
@@ -252,9 +250,6 @@ push_user_tag(int fd, int out)
 }
 
 
-/* 
- * Receives a pushed direct message dispatch and inserts it into the database
- */ 
 int
 push_message(int fd, int out)
 {
@@ -264,9 +259,6 @@ push_message(int fd, int out)
 }
 
 
-/* 
- * Receives a pushed dispatch and inserts it into the database
- */ 
 int
 push_dispatch(int fd, int out)
 {
@@ -276,9 +268,6 @@ push_dispatch(int fd, int out)
 }
 
 
-/* 
- * Receives a pushed user object and inserts it into the database
- */ 
 int
 push_user(int fd, int out)
 {

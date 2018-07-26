@@ -10,6 +10,7 @@
 
 #define INSTA_PROTOCOL_SIZE 14
 #define INSTA_PROTOCOL_NUM 11
+#define LARGE_ID_SIZE 20
 
 struct insta_protocol {
 	char protocol[INSTA_PROTOCOL_SIZE];

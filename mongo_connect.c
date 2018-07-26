@@ -19,7 +19,6 @@
 #include "user_definitions.h"
 #include "dispatch_definitions.h"
 
-#define INSTA_CLIENT "insta_client"
 
 int
 mongo_user_connect(struct mongo_user_connection *cn, char *db_name, char *coll_name)
@@ -69,6 +68,11 @@ mongo_user_teardown(struct mongo_user_connection *cn)
 
 char*
 build_json(mongoc_cursor_t *cursor, int req_num, int *result){
+	/* builds a json object using a cursor from a mongo query. 
+   * the returned buffer has been malloced to the correct size
+   * and must be freed by the caller. Returns the json as a 
+   * buffer on success, or NULL on failure */
+
 	const bson_t *result_dispatch;
 	size_t json_length;	
 	int buf_size;
@@ -99,7 +103,7 @@ build_json(mongoc_cursor_t *cursor, int req_num, int *result){
 	if( buf != NULL){
 		buf = realloc(buf, buf_size +1);
 		char *end;
-		end = buf+ buf_size;
+		end = buf + buf_size;
 		*end = '\0';
 
 	}	
@@ -107,38 +111,36 @@ build_json(mongoc_cursor_t *cursor, int req_num, int *result){
 }
 
 
-//TODO: It might be useful to add a variable to describe the size of the json so that
-//we can try to determine if the entire json is parses and sucessfully inserted into 
-//the collection.
 int
 insert_json_from_fd(int fd, char *collection_name){
+	/* reads json from a file descriptor and inserts
+   * the json object as either a user or dispatch
+   * into the appropriate mongo collection. This
+   * function deletes duplicates if found. Returns 
+   * 0 on success or -1 on failure. */
+
 	bson_json_reader_t *json_reader;
 	bson_t document =	BSON_INITIALIZER;
 	bson_error_t error;
-	int a, num_docs_inserted;
+	int reader_status, num_docs_inserted;
 	
 	if(fcntl(fd, F_GETFD) == -1 || errno == EBADF){
     printf("File closed\n");
+		return -1;
 	} 
 
 	//Connect to user specified collection
   struct mongo_user_connection cn;
   cn.uri_string = "mongodb://localhost:27017";
-
-	//TODO: add error checking regarding collection names in mongo_connect
   mongo_user_connect(&cn, INSTA_DB, collection_name);
 	
 	//create new bson reader object that will read from the provided file descriptor
 	//true - specified that the fd will be closed when we destroy json_reader
 	json_reader = bson_json_reader_new_from_fd(fd, true);
 	
-	if(fcntl(fd, F_GETFD) == -1 || errno == EBADF){
-    printf("File closed\n");
-	} 
-
-	
-	while((a = bson_json_reader_read(json_reader, &document, &error))){
-		if( a < 0){
+	num_docs_inserted = 0;	
+	while((reader_status = bson_json_reader_read(json_reader, &document, &error))){
+		if( reader_status < 0){
 			fprintf(stderr, "Read Error:%s\n", error.message);
 			return -1;
 		}
@@ -157,7 +159,7 @@ insert_json_from_fd(int fd, char *collection_name){
 			}	
 		}
 	
-		num_docs_inserted += a;
+		num_docs_inserted += reader_status;
 		bson_reinit(&document);	
 	} 
 	
