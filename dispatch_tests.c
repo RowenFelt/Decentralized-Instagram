@@ -314,7 +314,7 @@ main(int argc, char* argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_parent_id(6666, -1, &result)\n");
 	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
@@ -350,7 +350,7 @@ main(int argc, char* argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("insert from JSON\n");
 	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
@@ -364,7 +364,7 @@ main(int argc, char* argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 		printf("search_dispatch_by_id(1, -1, &result)\n");
 		printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
@@ -376,7 +376,7 @@ main(int argc, char* argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_id(20, -1, &result)\n");
 	free(buf);
@@ -387,7 +387,7 @@ main(int argc, char* argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_user_audience(1234, NULL, O, 4, &result)\n");
 	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
@@ -401,7 +401,7 @@ main(int argc, char* argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n");
 	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
@@ -414,7 +414,7 @@ main(int argc, char* argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_tags('angstyteen', -1, &result)\n");
 	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
@@ -427,14 +427,14 @@ main(int argc, char* argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_user_tags(3, -1, &result)\n");
 	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
 
 	if(num_failed == 0){
-		printf("ALL TESTS SUCESSFUL\n");
+		printf("ALL TESTS SUCCESSFUL\n");
 	}
 
 

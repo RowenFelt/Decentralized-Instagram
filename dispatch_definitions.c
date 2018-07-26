@@ -50,10 +50,11 @@ insert_dispatch(struct dispatch *dis) {
 
   /* Dispatch body comprised of media and text */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "body", &child);
-  BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path);
-  BSON_APPEND_UTF8(&child, "text", dis->body->text); 
-  
+		BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path);
+		BSON_APPEND_UTF8(&child, "text", dis->body->text);  
 	bson_append_document_end(dispatch, &child); 
+
+	/* timestamp, user_id, audience size */
 	BSON_APPEND_INT64(dispatch, "user_id", dis->user_id);
   timestamp = time(NULL);
   if(timestamp == (time(NULL) - 1)){
@@ -63,51 +64,60 @@ insert_dispatch(struct dispatch *dis) {
   dis->timestamp = timestamp;  
   BSON_APPEND_TIME_T(dispatch, "timestamp", dis->timestamp);
   BSON_APPEND_INT32(dispatch, "audience_size", dis->audience_size); //who sees dispatch
+
   /* Store specific audience for a group message */
   if (dis->audience_size > MAX_GROUP_SIZE){
     return -1;
   }	
   BSON_APPEND_ARRAY_BEGIN(dispatch, "audience", &child);
-  for (int i = 0; i < dis->audience_size; i++){
-    memset(buf, '\0', 10);
-    sprintf(buf, "%d", i);
-    BSON_APPEND_INT64(&child, buf, dis->audience[i]);
-  }
+	  for (int i = 0; i < dis->audience_size; i++){
+	    memset(buf, '\0', 10);
+	    sprintf(buf, "%d", i);
+	    BSON_APPEND_INT64(&child, buf, dis->audience[i]);
+	  }
 	bson_append_array_end(dispatch, &child);
-  BSON_APPEND_INT32(dispatch, "num_tags", dis->num_tags);
+ 
   /* Insert any hashtags as sub-array */
+	BSON_APPEND_INT32(dispatch, "num_tags", dis->num_tags);
 	if(dis->num_tags > MAX_NUM_TAGS){
 		return -1; 
-	} BSON_APPEND_ARRAY_BEGIN(dispatch, "tags", &child);
-	for (int i = 0; i < dis->num_tags; i++){
-		memset(buf, '\0', 10);
-		sprintf(buf, "%d", i);
-		BSON_APPEND_UTF8(&child, buf, dis->tags[i]);
 	}
+	BSON_APPEND_ARRAY_BEGIN(dispatch, "tags", &child);
+		for (int i = 0; i < dis->num_tags; i++){
+			memset(buf, '\0', 10);
+			sprintf(buf, "%d", i);
+			BSON_APPEND_UTF8(&child, buf, dis->tags[i]);
+		}
 	bson_append_array_end(dispatch, &child);
-	BSON_APPEND_INT32(dispatch, "num_user_tags", dis->num_user_tags);
+
 	/* Insert any tagged users as sub-array */
+	BSON_APPEND_INT32(dispatch, "num_user_tags", dis->num_user_tags);
 	if (dis->num_user_tags >	MAX_NUM_TAGS){
 		return -1;
 	}	
 	BSON_APPEND_ARRAY_BEGIN(dispatch, "user_tags", &child);
-	for (int i = 0; i < dis->num_user_tags; i++){
-		memset(buf, '\0', 10);
-		sprintf(buf, "%d", i);
-		BSON_APPEND_INT64(&child, buf, dis->user_tags[i]);
-	}
+		for (int i = 0; i < dis->num_user_tags; i++){
+			memset(buf, '\0', 10);
+			sprintf(buf, "%d", i);
+			BSON_APPEND_INT64(&child, buf, dis->user_tags[i]);
+		}
 	bson_append_array_end(dispatch, &child);
+
 	/* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "dispatch_parent", &child);
-  BSON_APPEND_INT32(&child, "type", dis->parent->type);
-  BSON_APPEND_INT64(&child, "id", dis->parent->id); 
+	  BSON_APPEND_INT32(&child, "type", dis->parent->type);
+		BSON_APPEND_INT64(&child, "id", dis->parent->id); 
   bson_append_document_end(dispatch, &child);
+
+	/* fragmentation and dispatch_id */
 	BSON_APPEND_INT32(dispatch, "fragmentation", dis->fragmentation);
   BSON_APPEND_INT64(dispatch, "dispatch_id", dis->dispatch_id);
+
+  /* clean up bson doc and collection */
 	if (!mongoc_collection_insert_one (cn.collection, dispatch, NULL, NULL, &error)) {
 		fprintf (stderr, "%s\n", error.message); 
+		return -1;
 	} 
-  /* clean up bson doc and collection */
   bson_destroy (dispatch);
 	return mongo_user_teardown(&cn);
 }
@@ -211,11 +221,11 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
 	else{
 		BSON_APPEND_INT64(target_dispatch, "user_id", user_id);
 		BSON_APPEND_ARRAY_BEGIN (target_dispatch, "audience", &child);
-	  for (int i = 0; i < audience_size; ++i) {
-		  memset(query_buffer, '\0', 10);
-		  sprintf(query_buffer, "%d", i);
-		  BSON_APPEND_INT64(&child, query_buffer, audience[i]);
-		}
+		  for (int i = 0; i < audience_size; ++i) {
+			  memset(query_buffer, '\0', 10);
+			  sprintf(query_buffer, "%d", i);
+			  BSON_APPEND_INT64(&child, query_buffer, audience[i]);
+			}
 		bson_append_array_end (target_dispatch, &child);
 	}
 
@@ -237,7 +247,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
  * with the number of dispatches matching the dispatch
  * id provided.
  * Returns a pointer to a JSON string containing the 
- * results from the  query.
+ * results from the query, or NULL on failure.
  */
   bson_t *target_dispatch;  
 	bson_t child;
@@ -252,8 +262,8 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
   
 	/* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(target_dispatch, "dispatch_parent", &child);
-  BSON_APPEND_INT32(&child, "type", (int32_t) 1);
-  BSON_APPEND_INT64(&child, "id", dispatch_id); 
+		BSON_APPEND_INT32(&child, "type", (int32_t) 1);
+		BSON_APPEND_INT64(&child, "id", dispatch_id); 
   bson_append_document_end(target_dispatch, &child);
 
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
@@ -276,7 +286,7 @@ search_dispatch_by_tags(const char* query, int req_num, int *result){
  * an integer to be updated with the number of 
  * dispatches matching the dispatch id provided.
  * Returns a pointer to a JSON string containing the 
- * results from the  query.
+ * results from the  query, or NULL on failure.
  */
 	bson_t *target_dispatch;
 	mongoc_cursor_t *cursor;
@@ -309,7 +319,7 @@ search_dispatch_by_user_tags(uint64_t query, int req_num, int *result){
  * an integer to be updated with the number of 
  * dispatches matching the dispatch id provided.
  * Returns a pointer to a JSON string containing the 
- * results from the  query.
+ * results from the  query, or NULL on failure.
  */
   bson_t *target_dispatch;
   mongoc_cursor_t *cursor;
@@ -350,7 +360,7 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	const char *text;
 	uint32_t media_path_len;
 	uint32_t text_len;	
-
+	int fields;
 
 	body = (struct dispatch_body *) malloc(sizeof(struct dispatch_body));
 	parent = (struct dispatch_parent *) malloc(sizeof(struct dispatch_parent));
@@ -359,7 +369,7 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		perror("malloc");
 		return -1;
 	}	
-
+	fields = 0;
 
 	/* bind a bson iterator to the bson document that was found from our query */
 	bson_iter_init(&iter, bson_dispatch);
@@ -372,6 +382,7 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 			return -1;
 		}
 		body->media_path = strdup(media_path);
+		fields++;
 	}
 	if(bson_iter_next(&sub_iter)){
 		text =  bson_iter_utf8(&sub_iter, &text_len);
@@ -380,21 +391,27 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 			return -1;
 		}
 		body->text = strdup(text);
+		fields++;
 	}
 	dis->body = body;
+
+	/* user_id and timestamp */
 	if(bson_iter_find(&iter, "user_id")){
 		dis->user_id = bson_iter_int64(&iter);
+		fields++;
 	}
 	if(bson_iter_find(&iter, "timestamp")){
 		dis->timestamp = bson_iter_time_t(&iter);
+		fields++;
 	}
-	/*
-	 * Pulling data from the audience array 
-	 */
+
+	/* Pulling data from the audience array */
 	if(bson_iter_find(&iter, "audience_size")){
 		dis->audience_size = bson_iter_int32(&iter);
+		fields++;
 	}
 	if(bson_iter_find(&iter, "audience")){
+		fields++;
 		/* Check that current itter object holds array */
 		if(BSON_ITER_HOLDS_ARRAY(&iter) && dis->audience_size != 0){
 			/* pull bson data in to array audience_array */
@@ -406,7 +423,7 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 			bson_t *audience_array = bson_new_from_data(array, array_len);
 			/* initialize sub_iter to the new bson doc we just crafted */			
 			bson_iter_init(&sub_iter, audience_array);
-			/* itterate through the new bson document and pull data (where key == index) */
+			/* iterate through the new bson document and pull data (where key == index) */
 			while(bson_iter_next(&sub_iter) && i < dis->audience_size){
 				dis->audience[i] = bson_iter_int64(&sub_iter);
 				i++;
@@ -414,13 +431,14 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		bson_destroy(audience_array);
 		}
 	}
-	/*
-	 * Pulling data from the tags array
-	 */ 
+
+	/* Pulling data from the tags array */ 
 	if(bson_iter_find(&iter, "num_tags")){
 		dis->num_tags = bson_iter_int32(&iter);
+		fields++;
 	}
 	if(bson_iter_find(&iter, "tags")){
+		fields++;
 		if(BSON_ITER_HOLDS_ARRAY(&iter) && dis->num_tags != 0){
 			const uint8_t *array = NULL;
 			uint32_t array_len = 0;			
@@ -435,13 +453,14 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		bson_destroy(tags_array);
 		}
 	}
-	/*
-	 * Pulling data from the user_tags array 
-	 */
+
+	/* Pulling data from the user_tags array */
 	if(bson_iter_find(&iter, "num_user_tags")){
 		dis->num_user_tags = bson_iter_int32(&iter);
+		fields++;
 	}
 	if(bson_iter_find(&iter, "user_tags")){
+		fields++;
 		if(BSON_ITER_HOLDS_ARRAY(&iter) && dis->num_user_tags != 0){
 			const uint8_t *array = NULL; 
 			uint32_t array_len = 0;
@@ -457,21 +476,33 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 		bson_destroy(user_tags_array);
 		}
 	}
+
 	/* Fill dispatch_parent struct */
 	if(bson_iter_find_descendant(&iter, "dispatch_parent.type", &sub_iter)){
 		parent->type = bson_iter_int32(&sub_iter);
+		fields++;
 	}
 	if(bson_iter_next(&sub_iter)){
-		parent->id =  bson_iter_int64(&sub_iter);  
+		parent->id = bson_iter_int64(&sub_iter);  
+		fields++;
 	}
 	dis->parent = parent;
+
+	/* fragmentation and dispatch_id */
 	if(bson_iter_find(&iter, "fragmentation")){
 		dis->fragmentation = bson_iter_int32(&iter);
+		fields++;
 	}
 	if(bson_iter_find(&iter, "dispatch_id")){
 		dis->dispatch_id = bson_iter_int64(&iter);
+		fields++;
 	}
-	return 0;
+	if(fields == 14){
+		return 0;
+	}
+	else{
+		return -1;
+	}
 }
 
 
@@ -574,7 +605,5 @@ handle_dispatch_bson(bson_t *doc)
     printf("insertion from struct failed\n");
     return -1;
   }
-
   return 0;
-
 }

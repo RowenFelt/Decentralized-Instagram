@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_for_user_by_name_mongo('cboswell', req_num, &result)\n");
   printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_for_user_by_id_mongo(12345, req_num, &result)\n");
   printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("delete_user(12345)\n");
 	
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_id_mongo(12345) where 12345 is not a valid id\n");
 	
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_name_mongo('rfelt', req_num, &result)\n");
   printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_name_mongo('Rowen Felt', req_num, &result)\n");
   printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_name_mongo('Pete Johson', req_num, &result)\n");
   printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_id_mongo(159179, req_num, &result)\n");
   printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_id_mongo(159178, req_num, &result)\n");
   printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
 		num_failed++;
 	}
 	else{
-		printf("TEST SUCESS: ");
+		printf("TEST SUCCESS: ");
 	}
   printf("insert from JSON/n");
   printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
 //	delete_user(159179);
 
 	if(num_failed == 0){
-		printf("ALL TESTS SUCESSFUL\n");
+		printf("ALL TESTS SUCCESSFUL\n");
 	}
 	
 	return 0;
