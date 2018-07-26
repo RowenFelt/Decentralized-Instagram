@@ -13,6 +13,9 @@
 #define INSTA_FOLLOWER 0x01
 #define INSTA_FOLLOWEE 0x02
 #define INSTA_UNKNOWN 0x03
+#define ARRAY_INDICES 10
+#define DIRECTION_STRING_LEN 11
+#define RELATION_STRING_LEN 30
 
 struct user {
   uint64_t user_id;

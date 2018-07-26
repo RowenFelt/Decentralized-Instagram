@@ -142,7 +142,6 @@ int main(int argc, char *argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_for_user_by_name_mongo('cboswell', req_num, &result)\n");
-  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
 	
 	
 	buf = search_user_by_id_mongo(12345, req_num, &result);
@@ -154,7 +153,6 @@ int main(int argc, char *argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_for_user_by_id_mongo(12345, req_num, &result)\n");
-  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
 	
 	
 	if(delete_user(12345) != 1){
@@ -187,7 +185,6 @@ int main(int argc, char *argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_name_mongo('rfelt', req_num, &result)\n");
-  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
 	
 	
 	buf = search_user_by_name_mongo("Rowen Felt", req_num, &result);
@@ -199,7 +196,6 @@ int main(int argc, char *argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_name_mongo('Rowen Felt', req_num, &result)\n");
-  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
 	
 
 	buf = search_user_by_name_mongo("Pete Johnson", req_num, &result);
@@ -211,7 +207,6 @@ int main(int argc, char *argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_name_mongo('Pete Johson', req_num, &result)\n");
-  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
 	
 
 	buf = search_user_by_id_mongo(159179, req_num, &result);
@@ -223,7 +218,6 @@ int main(int argc, char *argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_id_mongo(159179, req_num, &result)\n");
-  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
 
 
 	buf = search_user_by_id_mongo(159178, req_num, &result);
@@ -235,7 +229,6 @@ int main(int argc, char *argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_user_by_id_mongo(159178, req_num, &result)\n");
-  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
 	
 
 	//Testing insert_json_from_fd funcion from util.c, which uses users 
@@ -266,8 +259,7 @@ int main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-  printf("insert from JSON/n");
-  printf("  buf length = %ld\n  result = %d\n", strlen(buf), result);
+  printf("insert from JSON\n");
 
   free(buf);
 

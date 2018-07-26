@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 #define INSTA_DB "insta"
-#define USER_COLLECTION "users"
+#define USER_COLLECTION "user"
 #define CASS_TABLE "user"
 #define DISPATCH_COLLECTION "dispatch"
 #define INSTA_CLIENT "insta_client"

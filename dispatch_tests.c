@@ -317,7 +317,6 @@ main(int argc, char* argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_parent_id(6666, -1, &result)\n");
-	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	//Testing insert_json_from_fd funcion from util.c, which uses dispatches 
 	//generated in this test file
 	//---------------------------------------------------------------------
@@ -342,7 +341,6 @@ main(int argc, char* argv[])
 	int num_leading_bytes = 3;
 	char *leading_bytes = malloc(num_leading_bytes);
 	read(fd, leading_bytes, num_leading_bytes);
-	//printf("Read the following leading bytes: %s\n", leading_bytes);
 
 	//attempt to read from fd and store bsons in a collection
 	if(insert_json_from_fd(fd, DISPATCH_COLLECTION) <= 0){
@@ -353,7 +351,6 @@ main(int argc, char* argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("insert from JSON\n");
-	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
 
 	//---------------------------------------------------------------------
@@ -366,8 +363,7 @@ main(int argc, char* argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-		printf("search_dispatch_by_id(1, -1, &result)\n");
-		printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
+	printf("search_dispatch_by_id(1, -1, &result)\n");
 	free(buf);	
 
 	buf = search_dispatch_by_id(20, -1, &result);
@@ -390,7 +386,6 @@ main(int argc, char* argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_user_audience(1234, NULL, O, 4, &result)\n");
-	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
 
 
@@ -404,7 +399,6 @@ main(int argc, char* argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n");
-	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
 
 
@@ -417,7 +411,6 @@ main(int argc, char* argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_tags('angstyteen', -1, &result)\n");
-	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
 	
 
@@ -430,7 +423,6 @@ main(int argc, char* argv[])
 		printf("TEST SUCCESS: ");
 	}
 	printf("search_dispatch_by_user_tags(3, -1, &result)\n");
-	printf("	buf length = %ld\n	result = %d\n", strlen(buf), result);
 	free(buf);
 
 	if(num_failed == 0){
