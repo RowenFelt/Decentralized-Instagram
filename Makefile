@@ -25,7 +25,7 @@ COLOR_OUTPUT = 2>&1 |                                   \
 
 .PHONY: all
 
-all: cass_user_tests cass_user.so get_user_mongo user_definitions.o user_definitions.so dispatch_definitions.o dispatch_definitions.so mongo_connect.o user_tests dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o
+all: cass_user_tests cass_user.so user_definitions.o user_definitions.so dispatch_definitions.o dispatch_definitions.so mongo_connect.o user_tests dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o
 
 network_protocol_tests: network_protocol_tests.c network_protocols.so
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOLINK) $(MONGOCOMP) $(COLOR_OUTPUT)
@@ -60,9 +60,6 @@ dispatch_definitions.o: dispatch_definitions.c
 dispatch_definitions.so: dispatch_definitions.o user_definitions.o mongo_connect.o  cass_user.o 
 	gcc -rdynamic -shared -o $@ $^ $(MONGOCOMP) $(MONGOLINK) $(COLOR_OUTPUT)
 
-get_user_mongo: get_user_mongo.c
-	gcc $(CFLAGS) -o $@ $^ $(MONGOCOMP) $(MONGOLINK) $(COLOR_OUTPUT)
-
 mongo_connect.o: mongo_connect.c
 	gcc $(CFLAGS) -fPIC -c -o $@ $^ $(MONGOCOMP) $(MONGOLINK) $(COLOR_OUTPUT)
 
@@ -80,4 +77,4 @@ cass_user_tests: cass_user_tests.c cass_user.so
 
 .PHONY: clean
 clean:
-	rm -f cass_user_tests cass_add_user cass_get_user cass_init cass_user.so cass_user.o util.o get_user_mongo mongo_connect.o user_definitions.o user_tests user_definitions.so dispatch_definitions.o dispatch_definitions.so dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o
+	rm -f cass_user_tests cass_user.so cass_user.o util.o mongo_connect.o user_definitions.o user_tests user_definitions.so dispatch_definitions.o dispatch_definitions.so dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o
