@@ -41,7 +41,7 @@ insert_dispatch(struct dispatch *dis) {
   struct mongo_connection cn;
 	char *num;
 
-  cn.uri_string = "mongodb://localhost:27017";
+  cn.uri_string = MONGO_URI;
 
   n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	if(n < 0){
@@ -154,7 +154,7 @@ delete_dispatch(uint64_t dispatch_id){
 	int n;
 
   struct mongo_connection cn;
-	cn.uri_string = "mongodb://localhost:27017";
+	cn.uri_string = MONGO_URI;
 
 	n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	if(n < 0){
@@ -193,7 +193,7 @@ search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result){
 	int n;
   struct mongo_connection cn;
 
-  cn.uri_string = "mongodb://localhost:27017";
+  cn.uri_string = MONGO_URI;
 
   n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	if(n < 0){
@@ -239,7 +239,7 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
 	int n;
 	struct mongo_connection cn;
 
-	cn.uri_string = "mongodb://localhost:27017";
+	cn.uri_string = MONGO_URI;
 
   n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	if(n < 0){
@@ -301,7 +301,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
 	int n;
 	struct mongo_connection cn;
 
-	cn.uri_string = "mongodb://localhost:27017";
+	cn.uri_string = MONGO_URI;
 
   n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	if(n < 0){
@@ -348,7 +348,7 @@ search_dispatch_by_tags(const char* query, int req_num, int *result){
 	int n;	
 	struct mongo_connection cn;
 
-	cn.uri_string = "mongodb://localhost:27017";	
+	cn.uri_string = MONGO_URI;	
 
 	n =	mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	if(n < 0){
@@ -391,7 +391,7 @@ search_dispatch_by_user_tags(uint64_t query, int req_num, int *result){
 	int n;
   struct mongo_connection cn;
 
-  cn.uri_string = "mongodb://localhost:27017";
+  cn.uri_string = MONGO_URI;
 
 	n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
 	if(n < 0){
@@ -657,6 +657,18 @@ dispatch_heap_cleanup(struct dispatch *dis){
  * referencing the memory associated with the bson struct
  * that was populated.
  */
+	if(dis == NULL){
+		printf("NULL dispatch pointer in dispatch_heap_cleanup\n");
+		return;
+	}
+	if(dis->body == NULL){
+		printf("NULL dispatch body pointer in dispatch_heap_cleanup\n");
+		return;
+	}
+	if(dis->parent == NULL){
+		printf("NULL dispatch parent pointer in dispatch_heap_cleanup\n");
+		return;
+	}
 	free(dis->body->media_path);
 	free(dis->body->text);
 	free(dis->body);
