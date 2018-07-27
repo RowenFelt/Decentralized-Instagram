@@ -27,7 +27,7 @@ int
 insert_user(struct user *new_user)
 {
 	/* inserts a user object into the mongoDB */
-	struct mongo_user_connection cn;
+	struct mongo_connection cn;
 	int error;
 	bson_t *doc;
 	bson_t child;
@@ -43,7 +43,7 @@ insert_user(struct user *new_user)
 	if(new_user == NULL){
 		return -1;
 	}
-	if((error = mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
+	if((error = mongo_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
 		return -1;
 	}
 	
@@ -104,7 +104,7 @@ insert_user(struct user *new_user)
   bson_destroy (&second_child);
   bson_destroy (&subchild_followers);
   bson_destroy (&subchild_following);
-	mongo_user_teardown(&cn);
+	mongo_teardown(&cn);
 	return 0;
 }
 
@@ -112,7 +112,7 @@ int
 delete_user(uint64_t user_id)
 {
 	/* deletes a user from mongoDB with a given user_id */
-	struct mongo_user_connection cn;
+	struct mongo_connection cn;
   bson_t *selector;
   bson_t reply;
 	bson_error_t error;
@@ -121,7 +121,7 @@ delete_user(uint64_t user_id)
   
 	cn.uri_string = "mongodb://localhost:27017";
   
-	if((cn_error = mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
+	if((cn_error = mongo_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
 		return -1;
 	}
 
@@ -137,7 +137,7 @@ delete_user(uint64_t user_id)
 	}
 	bson_destroy (selector);
 	bson_destroy (&reply);
-	mongo_user_teardown(&cn);
+	mongo_teardown(&cn);
   return result;
 }
 
@@ -200,14 +200,14 @@ search_user_by_name_mongo(char *username, int req_num, int *result)
    * to search for (i.e. a query would terminate after 
    * finding a single result if req_num == 1).
    */
-	struct mongo_user_connection cn;
+	struct mongo_connection cn;
 	mongoc_cursor_t *cursor;
 	bson_t *query;
 	bson_error_t error;
 	int cn_error;
 	
 	cn.uri_string = "mongodb://localhost:27017";
-	if((cn_error = mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
+	if((cn_error = mongo_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
 		return NULL;
 	}
 
@@ -227,7 +227,7 @@ search_user_by_name_mongo(char *username, int req_num, int *result)
 	}
 	mongoc_cursor_destroy (cursor);
 	bson_destroy (query);
-	mongo_user_teardown(&cn);
+	mongo_teardown(&cn);
 	
 	return buf;
 }
@@ -246,14 +246,14 @@ search_user_by_id_mongo(uint64_t user_id, int req_num, int *result)
    * to search for (i.e. a query would terminate after 
    * finding a single result if req_num == 1). 
    */
-  struct mongo_user_connection cn;
+  struct mongo_connection cn;
   mongoc_cursor_t *cursor;
   bson_t *query;
   bson_error_t error;
 	int cn_error;
 	
   cn.uri_string = "mongodb://localhost:27017";
-	if((cn_error = mongo_user_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
+	if((cn_error = mongo_connect(&cn, INSTA_DB, USER_COLLECTION)) != 0){
 		return NULL;
 	}
   query = BCON_NEW ("user_id", BCON_INT64(user_id));
@@ -267,7 +267,7 @@ search_user_by_id_mongo(uint64_t user_id, int req_num, int *result)
   }
   mongoc_cursor_destroy (cursor);
   bson_destroy (query);
-  mongo_user_teardown(&cn);
+  mongo_teardown(&cn);
  
 	return buf;
 }

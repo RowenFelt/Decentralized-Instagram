@@ -19,6 +19,7 @@
 #include "mongo_connect.h"
 #include "dispatch_definitions.h"
 
+#define DISPATCH_ARRAY_INDEX 10
 
 int
 insert_dispatch(struct dispatch *dis) {
@@ -26,40 +27,52 @@ insert_dispatch(struct dispatch *dis) {
  * Takes a dispatch struct and inserts it in the collection 
  * 'dispatch' (part of the 'insta' database).
  * Returns 0 upon successful insertion, -1 otherwise.
+ * The BSON_APPEND (uppercase) functions are macros that obfuscate
+ * additional fields, such as strlen. The lower-case versions,
+ * such as bson_append_document_end(), are direct function calls
+ * without macro equivalents.
  */
   bson_t *dispatch; 
   bson_t child;    
   bson_error_t error;
-  char buf[10]; //number of bytes in max index of array followers
+  char buf[DISPATCH_ARRAY_INDEX]; //number of bytes in max index of array followers
   time_t timestamp;
+	int n;
+  struct mongo_connection cn;
+	char *num;
 
-  struct mongo_user_connection cn;
   cn.uri_string = "mongodb://localhost:27017";
 
-  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
-	
+  n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+	if(n < 0){
+		printf("mongo connection failed\n");
+		return n;
+	}	
+
   //check if dis is a dupicate already stored in the the database 
   //(in which case duplicate will remain equal to 1)
   int duplicate = 0;
   int req_num = -1; 
-  search_dispatch_by_id(dis->dispatch_id, req_num, &duplicate); 	
+  num = search_dispatch_by_id(dis->dispatch_id, req_num, &duplicate); 	
   if(duplicate > 0){
-    return -1;
+		mongo_teardown(&cn); 
+		return -1;
   }
+	free(num);
   dispatch = bson_new();
 
   /* Dispatch body comprised of media and text */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "body", &child);
-		BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path);
-		BSON_APPEND_UTF8(&child, "text", dis->body->text);  
+	BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path);
+	BSON_APPEND_UTF8(&child, "text", dis->body->text);  
 	bson_append_document_end(dispatch, &child); 
 
 	/* timestamp, user_id, audience size */
 	BSON_APPEND_INT64(dispatch, "user_id", dis->user_id);
   timestamp = time(NULL);
-  if(timestamp == (time(NULL) - 1)){
-    (void) fprintf(stderr, "Faulty current time\n");
-		return -1;
+  if(timestamp == ((time_t) -1)){
+    printf("Faulty current time\n");
+		goto insert_error;
   }
   dis->timestamp = timestamp;  
   BSON_APPEND_TIME_T(dispatch, "timestamp", dis->timestamp);
@@ -67,46 +80,47 @@ insert_dispatch(struct dispatch *dis) {
 
   /* Store specific audience for a group message */
   if (dis->audience_size > MAX_GROUP_SIZE){
-    return -1;
+    printf("audience is larger than MAX_GROUP_SIZE\n");
+		goto insert_error;
   }	
   BSON_APPEND_ARRAY_BEGIN(dispatch, "audience", &child);
-	  for (int i = 0; i < dis->audience_size; i++){
-	    memset(buf, '\0', 10);
-	    sprintf(buf, "%d", i);
-	    BSON_APPEND_INT64(&child, buf, dis->audience[i]);
-	  }
+  for (int i = 0; i < dis->audience_size; i++){
+    memset(buf, '\0', DISPATCH_ARRAY_INDEX);
+    sprintf(buf, "%d", i);
+    BSON_APPEND_INT64(&child, buf, dis->audience[i]);
+  }
 	bson_append_array_end(dispatch, &child);
  
   /* Insert any hashtags as sub-array */
 	BSON_APPEND_INT32(dispatch, "num_tags", dis->num_tags);
 	if(dis->num_tags > MAX_NUM_TAGS){
-		return -1; 
+		goto insert_error;
 	}
 	BSON_APPEND_ARRAY_BEGIN(dispatch, "tags", &child);
-		for (int i = 0; i < dis->num_tags; i++){
-			memset(buf, '\0', 10);
-			sprintf(buf, "%d", i);
-			BSON_APPEND_UTF8(&child, buf, dis->tags[i]);
-		}
+	for (int i = 0; i < dis->num_tags; i++){
+		memset(buf, '\0', DISPATCH_ARRAY_INDEX);
+		sprintf(buf, "%d", i);
+		BSON_APPEND_UTF8(&child, buf, dis->tags[i]);
+	}
 	bson_append_array_end(dispatch, &child);
 
 	/* Insert any tagged users as sub-array */
 	BSON_APPEND_INT32(dispatch, "num_user_tags", dis->num_user_tags);
 	if (dis->num_user_tags >	MAX_NUM_TAGS){
-		return -1;
+		goto insert_error;
 	}	
 	BSON_APPEND_ARRAY_BEGIN(dispatch, "user_tags", &child);
-		for (int i = 0; i < dis->num_user_tags; i++){
-			memset(buf, '\0', 10);
-			sprintf(buf, "%d", i);
-			BSON_APPEND_INT64(&child, buf, dis->user_tags[i]);
-		}
+	for (int i = 0; i < dis->num_user_tags; i++){
+		memset(buf, '\0', DISPATCH_ARRAY_INDEX);
+		sprintf(buf, "%d", i);
+		BSON_APPEND_INT64(&child, buf, dis->user_tags[i]);
+	}
 	bson_append_array_end(dispatch, &child);
 
 	/* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "dispatch_parent", &child);
-	  BSON_APPEND_INT32(&child, "type", dis->parent->type);
-		BSON_APPEND_INT64(&child, "id", dis->parent->id); 
+  BSON_APPEND_INT32(&child, "type", dis->parent->type);
+	BSON_APPEND_INT64(&child, "id", dis->parent->id); 
   bson_append_document_end(dispatch, &child);
 
 	/* fragmentation and dispatch_id */
@@ -115,11 +129,16 @@ insert_dispatch(struct dispatch *dis) {
 
   /* clean up bson doc and collection */
 	if (!mongoc_collection_insert_one (cn.collection, dispatch, NULL, NULL, &error)) {
-		fprintf (stderr, "%s\n", error.message); 
-		return -1;
+		printf ("insertion failed with error: %s\n", error.message); 
+		goto insert_error;
 	} 
   bson_destroy (dispatch);
-	return mongo_user_teardown(&cn);
+	return mongo_teardown(&cn);
+
+insert_error:
+	bson_destroy(dispatch);
+	mongo_teardown(&cn);
+	return -1;
 }
 
 int 
@@ -132,25 +151,29 @@ delete_dispatch(uint64_t dispatch_id){
   bson_t *target_dispatch;  
 	bson_t reply;
 	bson_error_t error;
+	int n;
 
-  struct mongo_user_connection cn;
+  struct mongo_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
 
-  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+	n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+	if(n < 0){
+		printf("mongo_connect() failed in delete_dispatch\n");
+		return n;
+	}
 
   target_dispatch = bson_new();
 	BSON_APPEND_INT64(target_dispatch, "dispatch_id", dispatch_id);
 
 	if(!mongoc_collection_delete_one(cn.collection, target_dispatch, NULL, &reply, &error)){
-		fprintf(stderr, "Delete failed: %s\n", error.message);
+		printf("Delete failed: %s\n", error.message);
+		bson_destroy(target_dispatch);
 		return -1;
 	}
 	bson_destroy(target_dispatch);
 	bson_destroy(&reply);
 	
-  mongo_user_teardown(&cn);
-
-	return 0;
+	return mongo_teardown(&cn); 
 }
 
 
@@ -167,22 +190,33 @@ search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result){
  */
   bson_t *target_dispatch;  
   mongoc_cursor_t *cursor;
+	int n;
+  struct mongo_connection cn;
 
-  struct mongo_user_connection cn;
   cn.uri_string = "mongodb://localhost:27017";
 
-  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+  n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+	if(n < 0){
+		printf("mongo connect failed in search_dispatch_by_id\n");
+		return NULL;
+	}
   
   target_dispatch = bson_new();
   BSON_APPEND_INT64(target_dispatch, "dispatch_id", dispatch_id);
   
   cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
- 
+	if(cursor == NULL){
+		printf("invalid cursor in search_dispatch_by_id\n");
+		bson_destroy(target_dispatch);
+		mongo_teardown(&cn);
+		return NULL;
+	}
+	 
 	*result = 0;
 	char* buf = build_json(cursor, req_num, result);	 
   mongoc_cursor_destroy(cursor);
   bson_destroy(target_dispatch);
-  mongo_user_teardown(&cn);
+  mongo_teardown(&cn);
   return buf;
 }
 
@@ -201,13 +235,17 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
   bson_t *target_dispatch;  
 	bson_t child;
   mongoc_cursor_t *cursor;   
-  char query_buffer[10];
+  char query_buffer[DISPATCH_ARRAY_INDEX];
+	int n;
+	struct mongo_connection cn;
 
-	struct mongo_user_connection cn;
 	cn.uri_string = "mongodb://localhost:27017";
 
-  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
-
+  n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+	if(n < 0){
+		printf("mongo connect failed in search_dispatch_by_user_audience\n");
+		return NULL;
+	}
   target_dispatch = bson_new();
 	
 	if(audience_size == 0){
@@ -221,21 +259,27 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
 	else{
 		BSON_APPEND_INT64(target_dispatch, "user_id", user_id);
 		BSON_APPEND_ARRAY_BEGIN (target_dispatch, "audience", &child);
-		  for (int i = 0; i < audience_size; ++i) {
-			  memset(query_buffer, '\0', 10);
-			  sprintf(query_buffer, "%d", i);
-			  BSON_APPEND_INT64(&child, query_buffer, audience[i]);
-			}
+		for (int i = 0; i < audience_size; ++i) {
+		  memset(query_buffer, '\0', DISPATCH_ARRAY_INDEX);
+		  sprintf(query_buffer, "%d", i);
+		  BSON_APPEND_INT64(&child, query_buffer, audience[i]);
+		}
 		bson_append_array_end (target_dispatch, &child);
 	}
 
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
+	if(cursor == NULL){
+		printf("invalid cursor in search_dispatch_by_user_audience\n");
+		bson_destroy(target_dispatch);
+		mongo_teardown(&cn);
+		return NULL;
+	}
 
 	*result = 0;
 	char *buf = build_json(cursor, req_num, result);
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
-	mongo_user_teardown(&cn);	
+	mongo_teardown(&cn);	
 	return buf; 
 }
 
@@ -247,34 +291,45 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
  * with the number of dispatches matching the dispatch
  * id provided.
  * Returns a pointer to a JSON string containing the 
- * results from the query, or NULL on failure.
+ * results from the query, or NULL on failure. A failure in
+ * build_json will return NULL, which will be returned in buf
+ * regardless, so error-checking is unnecessary.
  */
   bson_t *target_dispatch;  
 	bson_t child;
   mongoc_cursor_t *cursor;
-		
-	struct mongo_user_connection cn;
+	int n;
+	struct mongo_connection cn;
+
 	cn.uri_string = "mongodb://localhost:27017";
 
-  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
-
+  n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+	if(n < 0){
+		printf("mongo connect failed in search_dispatch_by_parent_id\n");
+		return NULL;
+	}
   target_dispatch = bson_new();
   
 	/* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(target_dispatch, "dispatch_parent", &child);
-		BSON_APPEND_INT32(&child, "type", (int32_t) 1);
-		BSON_APPEND_INT64(&child, "id", dispatch_id); 
+	BSON_APPEND_INT32(&child, "type", (int32_t) 1);
+	BSON_APPEND_INT64(&child, "id", dispatch_id); 
   bson_append_document_end(target_dispatch, &child);
 
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
-	
+	if(cursor == NULL){
+		printf("invalid cursor in search_dispatch_by_parent_id\n");
+		bson_destroy(target_dispatch);
+		mongo_teardown(&cn);
+		return NULL;
+	}
 	*result = 0;		
 	char *buf = build_json(cursor, req_num, result);
 
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
 	bson_destroy(&child);
-	mongo_user_teardown(&cn);
+	mongo_teardown(&cn);
 	return buf; 
 }
 
@@ -290,23 +345,33 @@ search_dispatch_by_tags(const char* query, int req_num, int *result){
  */
 	bson_t *target_dispatch;
 	mongoc_cursor_t *cursor;
-	
-	struct mongo_user_connection cn;
+	int n;	
+	struct mongo_connection cn;
+
 	cn.uri_string = "mongodb://localhost:27017";	
 
-	mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
-
+	n =	mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+	if(n < 0){
+		printf("mongo connect failed in search_dispatch_by_tags\n");
+		return NULL;
+	}
 	target_dispatch = bson_new();
 
   BSON_APPEND_UTF8(target_dispatch, "tags", query);
 	
 	cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
+	if(cursor == NULL){
+		printf("invalid cursor in search_dispatch_by_parent_id\n");
+		bson_destroy(target_dispatch);
+		mongo_teardown(&cn);
+		return NULL;
+	}
 	*result = 0;
 	char *buf = build_json(cursor, req_num, result);
 
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
-	mongo_user_teardown(&cn);
+	mongo_teardown(&cn);
 	return buf;
 
 }
@@ -323,30 +388,41 @@ search_dispatch_by_user_tags(uint64_t query, int req_num, int *result){
  */
   bson_t *target_dispatch;
   mongoc_cursor_t *cursor;
+	int n;
+  struct mongo_connection cn;
 
-  struct mongo_user_connection cn;
   cn.uri_string = "mongodb://localhost:27017";
 
-  mongo_user_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
-
+	n = mongo_connect(&cn, INSTA_DB, DISPATCH_COLLECTION);
+	if(n < 0){
+		printf("mongo connect failed in search_dispatch_by_user_tags\n");
+		return NULL;
+	}
   target_dispatch = bson_new();
 
   BSON_APPEND_INT64(target_dispatch, "user_tags", query);
   
   cursor = mongoc_collection_find_with_opts(cn.collection, target_dispatch, NULL, NULL);
-  *result = 0;
+  if(cursor == NULL){
+		printf("invalid cursor in search_dispatch_by_user_tags\n");
+		bson_destroy(target_dispatch);
+		mongo_teardown(&cn);
+		return NULL;
+	}
+	*result = 0;
   char *buf = build_json(cursor, req_num, result);
 
   mongoc_cursor_destroy(cursor);
   bson_destroy(target_dispatch);
-  mongo_user_teardown(&cn);
+  mongo_teardown(&cn);
   return buf;
 
 }
 
 
 int
-parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
+parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch)
+{
 /*
  * Takes a pointer to a dispatch struct and fills it with the
  * contents of a bson document by parsing the contents of the
@@ -362,13 +438,19 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	uint32_t text_len;	
 	int fields;
 
-	body = (struct dispatch_body *) malloc(sizeof(struct dispatch_body));
-	parent = (struct dispatch_parent *) malloc(sizeof(struct dispatch_parent));
-	
-	if(body == NULL || parent == NULL){
-		perror("malloc");
-		return -1;
-	}	
+	if(dis == NULL){
+		printf("invalid dispatch pointer in parse_dispatch_bson\n");
+		goto parse_dispatch_error;
+	}
+	if((body = malloc(sizeof(struct dispatch_body))) == NULL){
+		perror("malloc(body)");
+		goto parse_dispatch_error;
+	}
+	if((parent = malloc(sizeof(struct dispatch_parent))) == NULL){
+		perror("malloc(parent)");
+		goto parse_bson_body;
+	}
+		
 	fields = 0;
 
 	/* bind a bson iterator to the bson document that was found from our query */
@@ -378,8 +460,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	if(bson_iter_find_descendant(&iter, "body.media_path", &sub_iter)){
 		media_path = bson_iter_utf8(&sub_iter, &media_path_len);
 		if((body->media_path = malloc(media_path_len)) == NULL){
-			perror("malloc");
-			return -1;
+			perror("malloc(body->media_path)");
+			goto parse_bson_parent;
 		}
 		body->media_path = strdup(media_path);
 		fields++;
@@ -387,8 +469,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	if(bson_iter_next(&sub_iter)){
 		text =  bson_iter_utf8(&sub_iter, &text_len);
 		if((body->text = malloc(text_len)) == NULL){
-			perror("malloc");
-			return -1;
+			perror("malloc(body->text)");
+			goto parse_bson_media_path;
 		}
 		body->text = strdup(text);
 		fields++;
@@ -449,7 +531,7 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 			while(bson_iter_next(&sub_iter) && i < dis->num_tags){
 				strcpy(dis->tags[i], bson_iter_utf8(&sub_iter, NULL));
 				i++;
-			}
+			}	
 		bson_destroy(tags_array);
 		}
 	}
@@ -503,6 +585,15 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch){
 	else{
 		return -1;
 	}
+
+parse_bson_media_path:
+	free(body->media_path);
+parse_bson_parent:
+	free(parent);
+parse_bson_body:
+	free(body);
+parse_dispatch_error:
+	return -1;
 }
 
 
@@ -514,7 +605,10 @@ print_dispatch_struct(struct dispatch *dis){
  * Prints a formated version of a dispatch struct
  */
 	char *time_as_string;
-	
+
+	if(dis == NULL){
+		printf("null dispatch pointer in print_dispatch_struct\n");	
+	}
 	printf("-----------------------------------------------------------------------\n");
 	printf("body: \n");	
 	printf("	media_path: %s\n",dis->body->media_path);
@@ -585,19 +679,23 @@ handle_dispatch_bson(bson_t *doc)
   struct dispatch new_dis;
   int result;
 
+	if(doc == NULL){
+		printf("invalid doc pointer in handle_dispatch_bson\n");
+		return -1;
+	}
+
   if(parse_dispatch_bson(&new_dis, doc) < 0){
     printf("error parsing to dispatch struct\n");
     return -1;
   }
 
   //search for duplicate by dispatch id
-  if(search_dispatch_by_id(new_dis.dispatch_id, 1, &result) != NULL){
-    if(result > 0){
-      if(delete_dispatch(new_dis.dispatch_id) < 0){
-        printf("deletion of duplicate failed\n");
-        return -1;
-      }
-    }
+  char * buf = search_dispatch_by_id(new_dis.dispatch_id, 1, &result);
+	free(buf);
+
+  if(result > 0 && delete_dispatch(new_dis.dispatch_id) < 0){
+    printf("deletion of duplicate failed\n");
+    return -1;
   }
 
   //insert the dispatch from the new_dis struct  

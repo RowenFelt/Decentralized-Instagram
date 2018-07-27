@@ -4,8 +4,8 @@
  * Authors: Rowen Felt and Campbell Boswell
  */
 
-#ifndef _INSTA_USER_DEFINITIONS
-#define _INSTA_USER_DEFINITIONS
+#ifndef _USER_DEFINITIONS_H
+#define _USER_DEFINITIONS_H
 
 #include <bson.h>
 #include <stdint.h>
@@ -53,4 +53,4 @@ char * search_user_by_id_mongo(uint64_t user_id, int req_num, int *result);
 int handle_user_bson(bson_t *doc);
 int parse_user_bson(struct user *user, const bson_t *doc);
 
-#endif /* _INSTA_USER_DEFINITIONS */
+#endif /* _USER_DEFINITIONS_H */

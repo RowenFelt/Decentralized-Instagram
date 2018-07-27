@@ -4,8 +4,8 @@
  * Authors: Rowen Felt and Campbell Boswell
 */
 
-#ifndef _CASS_USER
-#define _CASS_USER
+#ifndef _CASS_USER_H
+#define _CASS_USER_H
 
 #include <cassandra.h>
 
@@ -22,4 +22,4 @@ uint64_t * get_user_id_by_username(char* keyspace, char* table, char* username, 
 char * get_user_ip_by_id(char* keyspace, char* table, uint64_t user_id);
 
 
-#endif /* _CASS_USER */
+#endif /* _CASS_USER_H */

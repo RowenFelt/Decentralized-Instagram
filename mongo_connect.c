@@ -21,15 +21,20 @@
 
 
 int
-mongo_user_connect(struct mongo_user_connection *cn, char *db_name, char *coll_name)
+mongo_connect(struct mongo_connection *cn, char *db_name, char *coll_name)
 {
 	/*  Required to initialize libmongoc's internals */
-  mongoc_init ();
+  mongoc_init();
+
+	if(cn == NULL || db_name == NULL || coll_name == NULL){
+		printf("invalida parameters to mongo_connect()\n");
+		return -1;
+	}
 
   /* Safely create a MongoDB URI object from the given string */
   cn->uri = mongoc_uri_new_with_error (cn->uri_string, &cn->error);
-  if (!cn->uri) {
-    fprintf (stderr,
+  if(!cn->uri){
+    fprintf(stderr,
       "failed to parse URI: %s\n"
       "error message:       %s\n",
       cn->uri_string,
@@ -38,31 +43,46 @@ mongo_user_connect(struct mongo_user_connection *cn, char *db_name, char *coll_n
   }
 
   /* Create a new client instance */
-  cn->client = mongoc_client_new_from_uri (cn->uri);
-  if (!cn->client) {
+  cn->client = mongoc_client_new_from_uri(cn->uri);
+  if(!cn->client){ 
     return -1;
   }
 
   /*
     * Register the application name so we can track it in the profile logs
     * on the server. This can also be done from the URI (see other examples). */
-  mongoc_client_set_appname (cn->client, INSTA_CLIENT);
+  mongoc_client_set_appname(cn->client, INSTA_CLIENT);
 
   /* Get a handle on the database "db_name" and collection "coll_name" */
-  cn->database = mongoc_client_get_database (cn->client, db_name);
-  cn->collection = mongoc_client_get_collection (cn->client, db_name, coll_name);
+  cn->database = mongoc_client_get_database(cn->client, db_name);
+  cn->collection = mongoc_client_get_collection(cn->client, db_name, coll_name);
   return 0;
 }
 
 int
-mongo_user_teardown(struct mongo_user_connection *cn)
+mongo_teardown(struct mongo_connection *cn)
 {
 	/* Release our handles and clean up libmongoc */
-  mongoc_collection_destroy (cn->collection);
-  mongoc_database_destroy (cn->database);
-  mongoc_uri_destroy (cn->uri);
-  mongoc_client_destroy (cn->client);
-  mongoc_cleanup ();
+  if(cn == NULL){
+		return -1;
+	}
+	if(cn->collection == NULL){
+		return -1;
+	}
+	if(cn->database == NULL){
+		return -1;
+	}
+	if(cn->uri == NULL){
+		return -1;
+	}
+	if(cn->client == NULL){
+		return -1;
+	}
+	mongoc_collection_destroy(cn->collection);
+  mongoc_database_destroy(cn->database);
+  mongoc_uri_destroy(cn->uri);
+  mongoc_client_destroy(cn->client);
+  mongoc_cleanup();
 	return 0;
 }
 
@@ -86,9 +106,18 @@ build_json(mongoc_cursor_t *cursor, int req_num, int *result){
 		req_num = INT_MAX;
 	}
 
+	if(cursor == NULL){
+		printf("invalid cursor argument in build_json()\n");
+		return NULL;
+	}
+
+	/* buf is set to NULL, so only necessary to return buf in case of errors */
 	while(mongoc_cursor_next(cursor, &result_dispatch) && *result < req_num){
     char *json_str;
     json_str = bson_as_canonical_extended_json(result_dispatch, &json_length);
+		if(json_str == NULL){
+			break;
+		}
     buf_size += json_length;
     buf = realloc(buf, buf_size);
     strncpy(buf + buf_size - json_length, json_str, json_length);
@@ -97,7 +126,7 @@ build_json(mongoc_cursor_t *cursor, int req_num, int *result){
   }
 
 	if(mongoc_cursor_error(cursor, &error)){
-		fprintf(stderr, "Failed to itterate through all documents: %s\n", error.message);
+		fprintf(stderr, "Failed to iterate through all documents: %s\n", error.message);
 	}
 	
 	if( buf != NULL){
@@ -130,21 +159,20 @@ insert_json_from_fd(int fd, char *collection_name){
 	} 
 
 	//Connect to user specified collection
-  struct mongo_user_connection cn;
+  struct mongo_connection cn;
   cn.uri_string = "mongodb://localhost:27017";
-  mongo_user_connect(&cn, INSTA_DB, collection_name);
+  mongo_connect(&cn, INSTA_DB, collection_name);
 	
 	//create new bson reader object that will read from the provided file descriptor
 	//true - specified that the fd will be closed when we destroy json_reader
 	json_reader = bson_json_reader_new_from_fd(fd, true);
+
+	if(json_reader == NULL){
+		goto insert_json_from_fd_error;
+	}
 	
 	num_docs_inserted = 0;	
 	while((reader_status = bson_json_reader_read(json_reader, &document, &error))){
-		if( reader_status < 0){
-			fprintf(stderr, "Read Error:%s\n", error.message);
-			return -1;
-		}
-		
 		if(strcmp(collection_name, USER_COLLECTION) == 0){
 			if(handle_user_bson(&document) < 0){
 				printf("insertion failed\n");
@@ -155,7 +183,8 @@ insert_json_from_fd(int fd, char *collection_name){
 		else if(strcmp(collection_name, DISPATCH_COLLECTION) == 0){
 			if(handle_dispatch_bson(&document) < 0){
 				printf("insertion failed\n");
-				return -1;
+				bson_destroy(&document);
+				goto insert_json_from_fd_error;
 			}	
 		}
 	
@@ -163,6 +192,11 @@ insert_json_from_fd(int fd, char *collection_name){
 		bson_reinit(&document);	
 	} 
 	
+	if(reader_status < 0){
+		printf("Read Error:%s\n", error.message);
+		bson_destroy(&document);
+		goto insert_json_from_fd_error;
+	}
 	
 	//Breakdown connection and bson types
 	bson_json_reader_destroy(json_reader); //Also closes fd
@@ -170,7 +204,13 @@ insert_json_from_fd(int fd, char *collection_name){
 		printf("File NOT closed\n");
 	}	
 	bson_destroy(&document);
-	mongo_user_teardown(&cn);
+	mongo_teardown(&cn);
 
 	return num_docs_inserted;
+
+insert_json_from_fd_error:
+	bson_json_reader_destroy(json_reader);
+	mongo_teardown(&cn);
+	return -1;
+
 }

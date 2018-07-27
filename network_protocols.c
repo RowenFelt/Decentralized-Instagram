@@ -21,15 +21,38 @@
 #include "dispatch_definitions.h"
 #include "mongo_connect.h"
 
+#define INSTA_PROTOCOL_SIZE 14
+#define LARGE_ID_SIZE 20
+
 static uint64_t read_id(int fd);
-  
+
+struct insta_protocol {
+	char protocol[INSTA_PROTOCOL_SIZE];
+	int (*func)(int, int);
+};
+ 
+static int pull_all(int in, int out);
+static int pull_child(int in, int out);
+static int pull_dispatch(int in, int out);
+static int pull_user(int in, int out);
+static int pull_user_tags(int in, int out);
+static int pull_tags(int in, int out);
+
+static int push_child(int fd, int out);
+static int push_user_tag(int fd, int out);
+static int push_message(int fd, int out);
+static int push_dispatch(int fd, int out);
+static int push_user(int fd, int out); 
+
 int
-parse_server_command(int in, int out){	
+parse_server_command(int in, int out)
+{	
 	int result;
 	int n = 0;
-	char *command = malloc(sizeof(char) * INSTA_PROTOCOL_SIZE);	
+	char command[INSTA_PROTOCOL_SIZE];	
+
 	n = read(in, command, INSTA_PROTOCOL_SIZE);	
-	if(n < 0){
+	if(n < 0) {
 		perror("read");
 		return -1;
 	}
@@ -48,8 +71,9 @@ parse_server_command(int in, int out){
 		{"push user**** ", push_user},
 	};
 
+	int protocol_count = 11;
 	int (*protocol_func)(int, int) = NULL;
-	for(int i = 0; i < INSTA_PROTOCOL_NUM; i++){
+	for(int i = 0; i < protocol_count; i++){
 		if(memcmp(command, protocol_list[i].protocol, 
 								INSTA_PROTOCOL_SIZE) == 0){
 			protocol_func = protocol_list[i].func;
@@ -57,13 +81,21 @@ parse_server_command(int in, int out){
 		}
 	}
 
+	if(protocol_func == NULL) {
+		return -1;
+	}
+	
 	result = protocol_func(in, out);
 	
-	free(command);
 	return result;
 }
 
 
+/* LLONG_MIN and LLONG_MAX are invalid user_ids or dispatch_ids
+ * this is defined in the user_definitions and 
+ * dispatch_definitions. A value of 0 indicates that strtoll
+ * was unsuccessful in reading a valid integer from string.
+ */
 static uint64_t 
 read_id(int fd)
 {
@@ -72,7 +104,7 @@ read_id(int fd)
 
 	memset(str, '\0', LARGE_ID_SIZE);
 	read(fd, str, LARGE_ID_SIZE);
-	id = strtoll((str), NULL, 10);
+	id = strtoll(str, NULL, 10);
 	if(id == LLONG_MIN || id == LLONG_MAX || id == 0 ){
 		printf("invalid ID in protocol field\n");
 		return -1;
@@ -81,7 +113,7 @@ read_id(int fd)
 }
 
 
-int
+static int
 pull_all(int in, int out){
 	char *bson;
 	uint64_t user_id;
@@ -97,13 +129,14 @@ pull_all(int in, int out){
 	}
 	n =	write(out, bson, strlen(bson)); 
 	if(n < 0) {
-		perror("write");
+		perror("pull_all write");
 		return -1;
 	}
+	printf("pull all***** %ld successful\n", user_id);
 	return result;
 }
 
-int
+static int
 pull_child(int in, int out){
 	char *bson;
 	int result = 0;
@@ -119,13 +152,14 @@ pull_child(int in, int out){
 	}
 	n =	write(out, bson, strlen(bson));
 	if(n < 0){
-		perror("write");
+		perror("pull_child write");
 		return -1;
 	}
+	printf("pull child*** %ld successful\n", parent_id);
 	return result;
 }
 
-int
+static int
 pull_dispatch(int in, int out){
 	char *bson;
 	int result = 0;
@@ -141,13 +175,14 @@ pull_dispatch(int in, int out){
 	}   	
 	n = write(out, bson, strlen(bson));
 	if(n < 0){
-		perror("write");
+		perror("pull_dispatch write");
 		return -1;
 	}
+	printf("pull dispatch %ld successful\n", dispatch_id);
 	return result;
 }
 
-int
+static int
 pull_user(int in, int out){
 	char *bson;
 	int result = 0;
@@ -163,15 +198,16 @@ pull_user(int in, int out){
 	}
 	n = write(out, bson, strlen(bson));
 	if(n < 0){
-		perror("write");
+		perror("pull_user write");
 		return -1;
 	}
+	printf("pull user**** %ld successful\n", user_id);
 	return result;
 }
 
 
 
-int
+static int
 pull_user_tags(int in, int out){
 	char *bson;
 	int result = 0;
@@ -187,14 +223,15 @@ pull_user_tags(int in, int out){
 	}
 	n = write(out, bson, strlen(bson));
 	if(n < 0) {
-		perror("write");
+		perror("pull_user_tags write");
 		return -1;
 	}
+	printf("pull user_tags %ld successful\n", user_id);
 	return result;
 }
 
 
-int
+static int
 pull_tags(int in, int out){
 	char *bson, *query;
 	int result = 0;
@@ -220,9 +257,10 @@ pull_tags(int in, int out){
 	}
 	n = write(out, bson, strlen(bson));
   if(n < 0) {
-    perror("write");
+    perror("pull_tags write");
     return -1;
   }
+	printf("pull tags***** %s successful\n", query);
 	return result;
 }
 
@@ -232,46 +270,51 @@ pull_tags(int in, int out){
  * future they will have to push updates to the
  * client under different conditions. */
 
-int
+static int
 push_child(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
+	printf("push child successful, inserted %d dispatch objects\n", result);
 	return result;
 }
 
 
-int
+static int
 push_user_tag(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
+	printf("push user_tag successful, inserted %d dispatch objects\n", result);
 	return result;
 }
 
 
-int
+static int
 push_message(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
+	printf("push message successful, inserted %d dispatch objects\n", result);
 	return result;
 }
 
 
-int
+static int
 push_dispatch(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, DISPATCH_COLLECTION);	
+	printf("push dispatch successful, inserted %d dispatch objects\n", result);
 	return result;
 }
 
 
-int
+static int
 push_user(int fd, int out)
 {
 	int result = 0;
 	result = insert_json_from_fd(fd, USER_COLLECTION);	
+	printf("push user successful, inserted %d user objects\n", result);
 	return result;
 }
