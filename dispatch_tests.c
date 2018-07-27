@@ -321,7 +321,7 @@ main(int argc, char* argv[])
 	//generated in this test file
 	//---------------------------------------------------------------------
 	
-	//Open the test file
+	//Open the test file containing dispatch json's
 	int fd;
 	if((fd = open("json_dispatch_test.txt", O_CREAT | O_RDWR, 0666)) == -1){
 		perror("open");
@@ -329,20 +329,27 @@ main(int argc, char* argv[])
 	}
 	
 	//NOTE: the insert_json_from_fd method does NOT work if fd has just been 
-	//written to...not sure why
+	//written to...
 
-	/* Uncomment to write to json_test.txt	initially */
+	/*
+	 * Uncomment to write to json_dispatch_test.txt if file is not present or 
+	 * needs to be updated
+	 */
 	//	if(write(fd, buf, 1742) != 1742){
 	//		perror("write");
 	//		return -1;
 	//	}
 	
-	/* Requires that you write 3 random bytes to json_test.txt first to test this part */
+	/*
+	 * Requires 3 random bytes to have been writen in json_dispatch test.txt 
+	 * first to test this part. Comment out if leading bytes not present
+	 */
 	int num_leading_bytes = 3;
 	char *leading_bytes = malloc(num_leading_bytes);
 	read(fd, leading_bytes, num_leading_bytes);
 
-	//attempt to read from fd and store bsons in a collection
+	//attempt to read from fd and store data as bson documents in the
+	//dispatch collection
 	if(insert_json_from_fd(fd, DISPATCH_COLLECTION) <= 0){
 		printf("TEST FAILED: ");
 		num_failed++;

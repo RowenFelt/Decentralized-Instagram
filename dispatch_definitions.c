@@ -145,8 +145,9 @@ int
 delete_dispatch(uint64_t dispatch_id){
 /* 
  * Takes a dispatch id, queries the 'dispatch' collection for 
- * a matching dispatch. If found, such a dispatch is deleted
- * and 0 is returned. If not found and deleted, then -1 is returned
+ * a matching dispatch and deletes it.
+ * Returns 0 if the dispatch is sucessfully deteled, otherwise 
+ * -1 is returned
  */
   bson_t *target_dispatch;  
 	bson_t reply;
@@ -310,7 +311,6 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
 	}
   target_dispatch = bson_new();
   
-	/* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(target_dispatch, "dispatch_parent", &child);
 	BSON_APPEND_INT32(&child, "type", (int32_t) 1);
 	BSON_APPEND_INT64(&child, "id", dispatch_id); 
@@ -426,7 +426,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch)
 /*
  * Takes a pointer to a dispatch struct and fills it with the
  * contents of a bson document by parsing the contents of the
- * document. Returns -1 upon an error, otherwise, returns 0.
+ * document.
+ * Returns -1 upon an error, otherwise, returns 0.
  */
 	struct dispatch_body *body;
 	struct	dispatch_parent *parent;
@@ -453,10 +454,8 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch)
 		
 	fields = 0;
 
-	/* bind a bson iterator to the bson document that was found from our query */
 	bson_iter_init(&iter, bson_dispatch);
 
-	/* Fill dispatch_body struct */
 	if(bson_iter_find_descendant(&iter, "body.media_path", &sub_iter)){
 		media_path = bson_iter_utf8(&sub_iter, &media_path_len);
 		if((body->media_path = malloc(media_path_len)) == NULL){
@@ -649,13 +648,11 @@ print_dispatch_struct(struct dispatch *dis){
 
 void
 dispatch_heap_cleanup(struct dispatch *dis){
-/* Free's all of the memory associated with pointers related
- * to the storage of a dispach struct that are initialized 
- * when populating the struct in the parse_dispatch_bson
- * function. This function should be called after calling
- * the parse_dispatch_bson function, once the user is finished
- * referencing the memory associated with the bson struct
- * that was populated.
+/* Free's memory associated with pointers related
+ * to dispach struct that are initialized in
+ * parse_dispatch_bson
+ * This function should be called after calling
+ * the parse_dispatch_bson function
  */
 	free(dis->body->media_path);
 	free(dis->body->text);
@@ -672,7 +669,7 @@ handle_dispatch_bson(bson_t *doc)
  * uses the dispatch_id and search_dispatch_by_id function 
  * to identify and delete duplicate dispatches, inserting the
  * new dispatch in the process.
- * This function returns 0 upon success, -1 otherwise.
+ * Returns 0 upon success, -1 otherwise.
  */
  
 	//parse to user struct
