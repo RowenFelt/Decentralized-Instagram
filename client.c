@@ -65,9 +65,13 @@ int main(int argc, char *argv[])
     while((n = read(0, buf, BUF_SIZE)) > 0) {
       if(buf[0] == EOF){
         printf("Exiting\n");
-        //exit(1);
-      }
-        send(conn_fd, buf, n, 0);
-    }
+				exit(1);
+			}
+      send(conn_fd, buf, n, 0);
+			memset(buf, '\0', BUF_SIZE);
+			read(conn_fd, buf, BUF_SIZE);
+			printf("received:\n %s\n", buf);		  
+			exit(1);
+		}
 }
 

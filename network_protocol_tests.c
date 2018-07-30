@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 		failed+=1;
 	}
 	else{
-		printf("TEST SUCCESSFUL: pull user_tag\n");
+		printf("TEST SUCCESSFUL: push user_tag\n");
 	}
 	delete_dispatch(49468);
 	result = parse_server_command(message, fd);
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 		failed+=1;
 	}
 	else{
-		printf("TEST SUCCESSFUL: pull message*\n");
+		printf("TEST SUCCESSFUL: push message*\n");
 	}
 	delete_dispatch(7381);
 	result = parse_server_command(push_disp, fd);
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 		failed+=1;
 	}
 	else{
-		printf("TEST SUCCESSFUL: pull dispatch\n");
+		printf("TEST SUCCESSFUL: push dispatch\n");
 	}
 	delete_dispatch(9965);
 	result = parse_server_command(push_user, fd);
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 		failed+=1;
 	}
 	else{
-		printf("TEST SUCCESSFUL: pull user***\n");
+		printf("TEST SUCCESSFUL: push user***\n");
 	}
 	delete_user(69696969);
 	close(fd);	
