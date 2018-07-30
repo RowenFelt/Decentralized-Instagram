@@ -153,7 +153,7 @@ insert_json_from_fd(int fd, char *collection_name){
 	bson_error_t error;
 	int reader_status, num_docs_inserted;
 	
-	if(fcntl(fd, F_GETFD) == -1 || errno == EBADF){
+	if(fcntl(fd, F_GETFD) == -1){
     printf("File closed\n");
 		return -1;
 	} 
@@ -200,7 +200,7 @@ insert_json_from_fd(int fd, char *collection_name){
 	
 	//Breakdown connection and bson types
 	bson_json_reader_destroy(json_reader); //Also closes fd
-	if(fcntl(fd, F_GETFD) != -1 || errno != EBADF){
+	if(fcntl(fd, F_GETFD) != -1){
 		printf("File NOT closed\n");
 	}	
 	bson_destroy(&document);
