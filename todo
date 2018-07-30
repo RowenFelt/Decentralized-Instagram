@@ -4,3 +4,6 @@ in network_protocols:
 
 for all files:	
 	write better perror strings with function names
+
+for monday:
+	parse_user_bson malloc free and goto errors

@@ -15,6 +15,7 @@
 #define CASS_TABLE "user"
 #define DISPATCH_COLLECTION "dispatch"
 #define INSTA_CLIENT "insta_client"
+#define MONGO_URI "mongodb://localhost:27017"
 
 struct mongo_connection {
   char *uri_string;

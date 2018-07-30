@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo "----------CASS USER TESTS----------"
+./cass_user_tests | tee -a test_suite_log
+echo "------------USER_TESTS-------------"
+./user_tests  | tee -a test_suite_log
+echo "----------DISPATCH TESTS-----------"
+./dispatch_tests  | tee -a test_suite_log
+echo "-------NETWORK _PROTOCOL_TESTS-----"
+./network_protocol_tests | tee -a test_suite_log
+
+#failures=$(grep FAIL test_suite_log)
+if [ $(grep FAIL test_suite_log | wc -l) -gt 0 ]; then
+	ERROR='\033[0;31m'
+	RESET='\033[0m'
+	printf "${ERROR}----------TESTS FAILED-----------${RESET}\n"
+	printf "${ERROR}$(grep FAIL test_suite_log)${RESET}\n"
+fi
+
+rm test_suite_log
