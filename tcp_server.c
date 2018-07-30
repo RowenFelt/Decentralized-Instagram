@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include "network_protocols.h"
 
 #define BACKLOG 10
 #define BUF_SIZE 4096
@@ -36,6 +37,7 @@ int main(int argc, char *argv[])
   struct sockaddr_in remote_sa;
   char *remote_ip;
   struct connect_info * info;
+	int n = 0;
 
   listen_port = argv[1];
 
@@ -78,5 +80,9 @@ int main(int argc, char *argv[])
     info->remote_port = remote_port;
     info->remote_ip = remote_ip;
     info->conn_fd = conn_fd;
-  }	
+		n = parse_server_command(info->conn_fd, info->conn_fd);
+		close(info->conn_fd);
+		free(info);
+	}
+	return n;	
 }

@@ -362,15 +362,17 @@ handle_user_bson(bson_t *doc)
 int 
 parse_user_bson(struct user *user, const bson_t *doc)
 {
-	/* populates the user struct with the fields from the bson_t doc */
+	/* populates the user struct with the fields from the bson_t doc,
+   * all pointers in the user struct are malloc'ed and must be freed.
+   * Returns 0 on success or -1 on failure */
 	bson_iter_t iter;
 	bson_iter_t iter_bio;
 	const char *username;
 	const char *image_path;		
 	const char *name;
-	struct personal_data *bio;
-	struct insta_relations *followers;
-	struct insta_relations *following;
+	struct personal_data *bio = NULL;
+	struct insta_relations *followers = NULL;
+	struct insta_relations *following = NULL;
 	int fields = 0;
 
 	bio = malloc(sizeof(struct personal_data));
@@ -378,9 +380,12 @@ parse_user_bson(struct user *user, const bson_t *doc)
 	following = malloc(sizeof(struct insta_relations));
 	if(bio == NULL || followers == NULL ||
 			following == NULL){
-		perror("malloc");
-		return -1;
+		perror("parse_user_bson: malloc");
+		goto parse_user_bson_error;
 	}
+
+	followers->user_ids = NULL;
+	following->user_ids = NULL;
 
 	bson_iter_init(&iter, doc);
 	if(bson_iter_find(&iter, "user_id")){
@@ -390,22 +395,29 @@ parse_user_bson(struct user *user, const bson_t *doc)
 	if(bson_iter_find(&iter, "username")){
 		username = bson_iter_utf8(&iter, NULL);
 		user->username = strdup(username);
+		if(user->username == NULL){
+			perror("parse_user_bson: strdup");
+			goto parse_user_username;
+		}
 		fields++;
 	}
 	if(bson_iter_find(&iter, "image_path")){
 		image_path = bson_iter_utf8(&iter, NULL);
 		user->image_path = strdup(image_path);
+		if(user->image_path == NULL){
+			perror("parse_user_bson: strdup");
+			goto parse_user_image_path;
+		}
 		fields++;	
 	}
 	
 	if(bson_iter_find_descendant(&iter, "bio.name", &iter_bio)){
 		name = bson_iter_utf8(&iter_bio, NULL);
-		bio->name = malloc(sizeof(char) * strlen(name)+1);
+		bio->name = strdup(name);	
 		if(bio->name == NULL){
-			perror("malloc");
-			return -1;
+			perror("parse_user_bson: strdup");
+			goto parse_user_bio_name;
 		}
-		memcpy(bio->name, name, strlen(name)+1);
 		fields++;
 	}
 	if(bson_iter_next(&iter_bio)){
@@ -430,25 +442,60 @@ parse_user_bson(struct user *user, const bson_t *doc)
 	}
 	else{
 		printf("incorrect number of fields\n");
-		return -1;
+		goto parse_relations_error;
 	}
+
+parse_relations_error:
+	free(following->user_ids);
+	free(followers->user_ids);
+parse_user_bio_name:
+	free(bio->name);
+parse_user_image_path:
+	free(user->image_path);
+parse_user_username:
+	free(user->username);
+parse_user_bson_error:
+	free(bio);
+	free(followers);
+	free(following);
+	return -1;
 }
 
 
 static int 
 parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *type, int *fields)
 {
-	/* parses the insta_relations sub document from a bson user object */
+	/* parses the insta_relations sub document from a bson user object,
+   * takes a bson_iter_t, insta_relations pointer, type (either "followers"
+   * or "following", and int fields pointer to increment for parse_user_bson.
+   * Returns 0 on success or -1 on failure. */
 	bson_iter_t iter_relation;
 	uint32_t bson_array_len;
   const uint8_t *bson_array;
 	char subtype[DIRECTION_STRING_LEN];
 	char new_type[RELATION_STRING_LEN];
-		
+	int type_length = 9;	
+
+	if(iter == NULL){
+		printf("NULL iter pointer, invalid argument\n");
+		return -1;
+	}
+	if(friends == NULL){
+		printf("NULL friends pointer, invalid argument\n");
+		return -1;
+	}
+	if(type == NULL || strlen(type) > type_length){
+		printf("NULL or invalid type argument\n");
+		return -1;
+	}
+	if(fields == NULL){
+		printf("NULL fields pointer, invalid argument\n");
+		return -1;
+	}
 	memset(new_type, '\0', RELATION_STRING_LEN);
 	/* check insta_relations type */
-	if(!((memcmp(type, "followers", 9) == 0)
-		|| (memcmp(type, "following", 9) == 0))){
+	if(!((memcmp(type, "followers", type_length) == 0)
+		|| (memcmp(type, "following", type_length) == 0))){
 		return -1;
 	}
 	strcpy(subtype, ".direction");
@@ -469,8 +516,9 @@ parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *
     int i=0;
     friends->user_ids = malloc(sizeof(uint64_t) * friends->count);
     if(friends->user_ids == NULL){
-      perror("malloc");
-      return -1;
+      printf("parse_insta_relations %s ", type);
+			perror("malloc"); 
+			return -1;
     }
     while(bson_iter_next(&iter_relation) && i < friends->count){
       friends->user_ids[i] = bson_iter_int64(&iter_relation);
@@ -480,13 +528,4 @@ parse_insta_relations(bson_iter_t *iter, struct insta_relations *friends, char *
   }
 	return 0;
 }
-
-
-
-
-
-
-
-
-
 

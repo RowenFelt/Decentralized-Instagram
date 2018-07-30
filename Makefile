@@ -27,7 +27,7 @@ COLOR_OUTPUT = 2>&1 |                                   \
 
 all: cass_user_tests cass_user.so user_definitions.o user_definitions.so dispatch_definitions.o dispatch_definitions.so mongo_connect.o user_tests dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o
 
-network_protocol_tests: network_protocol_tests.c network_protocols.so
+network_protocol_tests: network_protocol_tests.c network_protocols.so 
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOLINK) $(MONGOCOMP) $(COLOR_OUTPUT)
 
 network_protocols.o: network_protocols.c 
@@ -39,8 +39,8 @@ network_protocols.so: network_protocols.o user_definitions.o dispatch_definition
 client: client.c user_definitions.so
 	gcc $(CFLAGS) -o $@ $^ $(MONGOCOMP) $(MONGOLINK) $(CASSFLAGS) $(COLOR_OUTPUT)
 
-tcp_server: tcp_server.c
-	gcc $(CFLAGS) -o $@ $^ $(COLOR_OUTPUT)
+tcp_server: tcp_server.c network_protocols.so
+	gcc $(CFLAGS) -o $@ $^ $(MONGOLINK) $(MONGOCOMP) $(COLOR_OUTPUT)
 
 user_tests: user_tests.c user_definitions.so
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOCOMP) $(MONGOLINK) $(COLOR_OUTPUT)
