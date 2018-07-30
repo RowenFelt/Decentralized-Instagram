@@ -19,59 +19,69 @@
 #include "cass_user.h"
 
 #define BUF_SIZE 4096
+#define PUSH_PROTOCOL "push"
 
 int main(int argc, char *argv[])
 {
-    char *dest_user, *dest_port, *dest_hostname;
-    struct addrinfo hints, *res;
-    int conn_fd;
-    char buf[BUF_SIZE];
-    int rc;
-    int n;
+  char *dest_user, *dest_port, *dest_hostname, *input_file;
+	char *type;
+  struct addrinfo hints, *res;
+  int conn_fd;
+  char buf[BUF_SIZE];
+  int rc;
+  int n;
+	int input_fd;
 
-		/* dest_user is user_id of user */
-    dest_user = argv[1];
-    dest_port = argv[2];
+	/* dest_user is user_id of user */
+  dest_user = argv[1];
+  dest_port = argv[2];
+	input_file = argv[3];
+	type = argv[4];
+	input_fd = open(input_file, O_RDONLY);
+	if(input_fd == -1){
+		perror("client open");
+		return -1;
+	}
+	
+	int user_id = atoi(dest_user);
+	dest_hostname = get_user_ip_by_id(INSTA_DB, USER_COLLECTION, user_id);	
 
-		int user_id = atoi(dest_user);
-		dest_hostname = get_user_ip_by_id(INSTA_DB, USER_COLLECTION, user_id);	
+  /* create a socket */
+  conn_fd = socket(PF_INET, SOCK_STREAM, 0);
+  if(conn_fd == -1){
+    perror("socket");
+  }
 
-    /* create a socket */
-    conn_fd = socket(PF_INET, SOCK_STREAM, 0);
-    if(conn_fd == -1){
-      perror("socket");
-    }
+  /* but we do need to find the IP address of the server */
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  if((rc = getaddrinfo(dest_hostname, dest_port, &hints, &res)) != 0) {
+      printf("getaddrinfo failed: %s\n", gai_strerror(rc));
+      exit(1);
+  }
 
-    /* but we do need to find the IP address of the server */
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    if((rc = getaddrinfo(dest_hostname, dest_port, &hints, &res)) != 0) {
-        printf("getaddrinfo failed: %s\n", gai_strerror(rc));
-        exit(1);
-    }
+  /* connect to the server */
+  if(connect(conn_fd, res->ai_addr, res->ai_addrlen) < 0) {
+      perror("connect");
+      exit(2);
+  }
 
-    /* connect to the server */
-    if(connect(conn_fd, res->ai_addr, res->ai_addrlen) < 0) {
-        perror("connect");
-        exit(2);
-    }
+	
+  printf("Connected\n");
 
-    printf("Connected\n");
-
-    /* infinite loop of reading from terminal, sending the data, and printing
-     * what we get back */
-
-    while((n = read(0, buf, BUF_SIZE)) > 0) {
-      if(buf[0] == EOF){
-        printf("Exiting\n");
-				exit(1);
-			}
-      send(conn_fd, buf, n, 0);
-			memset(buf, '\0', BUF_SIZE);
-			read(conn_fd, buf, BUF_SIZE);
-			printf("received:\n %s\n", buf);		  
-			exit(1);
-		}
+  /* infinite loop of reading from terminal, sending the data, and printing
+   * what we get back */
+	n = read(input_fd, buf, BUF_SIZE);
+	send(conn_fd, buf, n, 0);
+	if(memcmp(type, PUSH_PROTOCOL, 4) == 0){
+		close(conn_fd);
+	}
+	else{
+		memset(buf, '\0', BUF_SIZE);
+		read(conn_fd, buf, BUF_SIZE);
+		printf("received:\n %s\n", buf);		  
+	}
+	exit(1);
 }
 

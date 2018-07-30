@@ -165,14 +165,14 @@ insert_json_from_fd(int fd, char *collection_name){
 	
 	//create new bson reader object that will read from the provided file descriptor
 	//true - specified that the fd will be closed when we destroy json_reader
-	json_reader = bson_json_reader_new_from_fd(fd, true);
+	json_reader = bson_json_reader_new_from_fd(fd, false);
 
 	if(json_reader == NULL){
 		goto insert_json_from_fd_error;
 	}
 	
 	num_docs_inserted = 0;	
-	while((reader_status = bson_json_reader_read(json_reader, &document, &error))){
+	while((reader_status = bson_json_reader_read(json_reader, &document, &error)) == 1){
 		if(strcmp(collection_name, USER_COLLECTION) == 0){
 			if(handle_user_bson(&document) < 0){
 				printf("insertion failed\n");
@@ -200,6 +200,7 @@ insert_json_from_fd(int fd, char *collection_name){
 	
 	//Breakdown connection and bson types
 	bson_json_reader_destroy(json_reader); //Also closes fd
+	close(fd);
 	if(fcntl(fd, F_GETFD) != -1){
 		printf("File NOT closed\n");
 	}	
