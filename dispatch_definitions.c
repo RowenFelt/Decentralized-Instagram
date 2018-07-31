@@ -20,6 +20,7 @@
 #include "dispatch_definitions.h"
 
 #define DISPATCH_ARRAY_INDEX 10
+#define NUM_DISPATCH_FIELDS 15
 
 int
 insert_dispatch(struct dispatch *dis) {
@@ -63,7 +64,8 @@ insert_dispatch(struct dispatch *dis) {
 
   /* Dispatch body comprised of media and text */
   BSON_APPEND_DOCUMENT_BEGIN(dispatch, "body", &child);
-	BSON_APPEND_UTF8(&child, "media_path", dis->body->media_path);
+	BSON_APPEND_INT32(&child, "media_size", dis->body->media_size);
+	BSON_APPEND_BINARY(&child, "media", 0, dis->body->media, dis->body->media_size);
 	BSON_APPEND_UTF8(&child, "text", dis->body->text);  
 	bson_append_document_end(dispatch, &child); 
 
@@ -145,8 +147,9 @@ int
 delete_dispatch(uint64_t dispatch_id){
 /* 
  * Takes a dispatch id, queries the 'dispatch' collection for 
- * a matching dispatch. If found, such a dispatch is deleted
- * and 0 is returned. If not found and deleted, then -1 is returned
+ * a matching dispatch and deletes it.
+ * Returns 0 if the dispatch is sucessfully deteled, otherwise 
+ * -1 is returned
  */
   bson_t *target_dispatch;  
 	bson_t reply;
@@ -310,7 +313,6 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
 	}
   target_dispatch = bson_new();
   
-	/* Insert dispatch_parent struct w/ parent's id */
   BSON_APPEND_DOCUMENT_BEGIN(target_dispatch, "dispatch_parent", &child);
 	BSON_APPEND_INT32(&child, "type", (int32_t) 1);
 	BSON_APPEND_INT64(&child, "id", dispatch_id); 
@@ -426,15 +428,16 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch)
 /*
  * Takes a pointer to a dispatch struct and fills it with the
  * contents of a bson document by parsing the contents of the
- * document. Returns -1 upon an error, otherwise, returns 0.
+ * document.
+ * Returns -1 upon an error, otherwise, returns 0.
  */
 	struct dispatch_body *body;
 	struct	dispatch_parent *parent;
 	bson_iter_t iter;
 	bson_iter_t sub_iter;
-	const char *media_path;
+	const uint8_t *media;
 	const char *text;
-	uint32_t media_path_len;
+	uint32_t media_size, media_size_actual;
 	uint32_t text_len;	
 	int fields;
 
@@ -453,24 +456,30 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch)
 		
 	fields = 0;
 
-	/* bind a bson iterator to the bson document that was found from our query */
 	bson_iter_init(&iter, bson_dispatch);
 
-	/* Fill dispatch_body struct */
-	if(bson_iter_find_descendant(&iter, "body.media_path", &sub_iter)){
-		media_path = bson_iter_utf8(&sub_iter, &media_path_len);
-		if((body->media_path = malloc(media_path_len)) == NULL){
-			perror("malloc(body->media_path)");
+	if(bson_iter_find_descendant(&iter, "body.media_size", &sub_iter)){
+		media_size = bson_iter_int32(&sub_iter);
+		body->media_size = media_size;	
+		fields++;
+	}
+	if(bson_iter_next(&sub_iter)){
+		bson_iter_binary(&sub_iter, NULL, &media_size_actual, &media);
+		//Check the stored size of the media against the size of the media
+		//we just pulled from the bson
+		if((media_size != media_size_actual)  || 
+			((body->media = malloc(media_size_actual)) == NULL)){
+			perror("malloc(body->media)");
 			goto parse_bson_parent;
 		}
-		body->media_path = strdup(media_path);
+		memcpy(body->media, media, media_size_actual);
 		fields++;
 	}
 	if(bson_iter_next(&sub_iter)){
 		text =  bson_iter_utf8(&sub_iter, &text_len);
 		if((body->text = malloc(text_len)) == NULL){
 			perror("malloc(body->text)");
-			goto parse_bson_media_path;
+			goto parse_bson_media;
 		}
 		body->text = strdup(text);
 		fields++;
@@ -579,15 +588,15 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch)
 		dis->dispatch_id = bson_iter_int64(&iter);
 		fields++;
 	}
-	if(fields == 14){
+	if(fields == NUM_DISPATCH_FIELDS){
 		return 0;
 	}
 	else{
 		return -1;
 	}
 
-parse_bson_media_path:
-	free(body->media_path);
+parse_bson_media:
+	free(body->media);
 parse_bson_parent:
 	free(parent);
 parse_bson_body:
@@ -611,7 +620,7 @@ print_dispatch_struct(struct dispatch *dis){
 	}
 	printf("-----------------------------------------------------------------------\n");
 	printf("body: \n");	
-	printf("	media_path: %s\n",dis->body->media_path);
+	printf("	media_size: %d\n",dis->body->media_size);
 	printf("	text: %s\n", dis->body->text);
 	printf("user_id: %ld\n",dis->user_id);	
 	time_as_string = ctime(&dis->timestamp);		
@@ -649,13 +658,11 @@ print_dispatch_struct(struct dispatch *dis){
 
 void
 dispatch_heap_cleanup(struct dispatch *dis){
-/* Free's all of the memory associated with pointers related
- * to the storage of a dispach struct that are initialized 
- * when populating the struct in the parse_dispatch_bson
- * function. This function should be called after calling
- * the parse_dispatch_bson function, once the user is finished
- * referencing the memory associated with the bson struct
- * that was populated.
+/* Free's memory associated with pointers related
+ * to dispach struct that are initialized in
+ * parse_dispatch_bson
+ * This function should be called after calling
+ * the parse_dispatch_bson function
  */
 	if(dis == NULL){
 		printf("NULL dispatch pointer in dispatch_heap_cleanup\n");
@@ -669,7 +676,7 @@ dispatch_heap_cleanup(struct dispatch *dis){
 		printf("NULL dispatch parent pointer in dispatch_heap_cleanup\n");
 		return;
 	}
-	free(dis->body->media_path);
+	free(dis->body->media);
 	free(dis->body->text);
 	free(dis->body);
 	free(dis->parent);
@@ -684,7 +691,7 @@ handle_dispatch_bson(bson_t *doc)
  * uses the dispatch_id and search_dispatch_by_id function 
  * to identify and delete duplicate dispatches, inserting the
  * new dispatch in the process.
- * This function returns 0 upon success, -1 otherwise.
+ * Returns 0 upon success, -1 otherwise.
  */
  
 	//parse to user struct

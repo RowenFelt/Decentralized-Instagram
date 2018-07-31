@@ -31,7 +31,8 @@ struct dispatch {
 };
 
 struct dispatch_body {
-	char *media_path;
+	int media_size;
+	uint8_t *media;
 	char *text;
 };
 
@@ -40,16 +41,16 @@ struct dispatch_parent {
 	uint64_t id; 
 };
 
-/* insert and delete methods for Mongo */
+/* Change state of mongo dispatch collection (insert and delete) */
 int insert_dispatch(struct dispatch *dis);
 int delete_dispatch(uint64_t dispatch_id);
-/* search Mongo dispatch collection */
+/* Search Mongo dispatch collection */
 char *search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result);
 char *search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, 						      	int audience_size, int req_num, int *result);
 char *search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result);
 char *search_dispatch_by_tags(const char *query, int req_num, int *result);
 char *search_dispatch_by_user_tags(uint64_t query, int req_num, int *result);
-/* transition between Mongo readable bson, and programmer optimized dispatch structs */
+/* transition between Mongo readable bson and dispatch structs */
 int parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch);
 int print_dispatch_struct(struct dispatch *dis);
 void dispatch_heap_cleanup(struct dispatch *dis);
