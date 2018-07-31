@@ -66,7 +66,8 @@ insert_user(struct user *new_user)
 	doc = bson_new();
 	BSON_APPEND_INT64(doc, "user_id", new_user->user_id);
 	BSON_APPEND_UTF8(doc, "username", new_user->username);
-	BSON_APPEND_UTF8(doc, "image_path", new_user->image_path);
+	BSON_APPEND_INT32(doc, "image_length", new_user->image_length);
+	BSON_APPEND_BINARY(doc, "image", 0, new_user->image, new_user->image_length);
 	BSON_APPEND_DOCUMENT_BEGIN(doc, "bio", &child);
 	BSON_APPEND_UTF8(&child, "name", new_user->bio->name);
 	BSON_APPEND_TIME_T(&child, "date_created", creation);
@@ -193,7 +194,7 @@ print_user_struct(struct user *user)
 	printf("-----------------------------------------------------------------------\n"); 
 	printf("user_id: %ld\n", user->user_id);
 	printf("username: %s\n", user->username);
-	printf("image_path: %s\n", user->image_path);
+	printf("image_length: %d\n", user->image_length);
 	printf("bio:\n");
 	printf("  name: %s\n", user->bio->name);
 	c_time_string = ctime(&user->bio->date_created);
@@ -368,7 +369,7 @@ parse_user_bson(struct user *user, const bson_t *doc)
 	bson_iter_t iter;
 	bson_iter_t iter_bio;
 	const char *username;
-	const char *image_path;		
+	const uint8_t *image;		
 	const char *name;
 	struct personal_data *bio = NULL;
 	struct insta_relations *followers = NULL;
@@ -401,13 +402,18 @@ parse_user_bson(struct user *user, const bson_t *doc)
 		}
 		fields++;
 	}
-	if(bson_iter_find(&iter, "image_path")){
-		image_path = bson_iter_utf8(&iter, NULL);
-		user->image_path = strdup(image_path);
-		if(user->image_path == NULL){
-			perror("parse_user_bson: strdup");
-			goto parse_user_image_path;
+	if(bson_iter_find(&iter, "image_length")){
+		user->image_length = bson_iter_int32(&iter);
+		fields++;
+	}
+	if(bson_iter_find(&iter, "image")){
+		user->image = malloc(sizeof(uint8_t) * user->image_length);
+		if(user->image == NULL){
+			perror("image in parse_user_bson: malloc");
+			goto parse_user_image;
 		}
+		bson_iter_binary(&iter, NULL, &user->image_length, &image);
+		memcpy(user->image, image, user->image_length);
 		fields++;	
 	}
 	
@@ -437,7 +443,7 @@ parse_user_bson(struct user *user, const bson_t *doc)
 	user->followers = followers;
 	parse_insta_relations(&iter, following, "following", &fields);
   user->following = following;
-	if(fields == 13){
+	if(fields == 14){
 		return 0;
 	}
 	else{
@@ -450,8 +456,8 @@ parse_relations_error:
 	free(followers->user_ids);
 parse_user_bio_name:
 	free(bio->name);
-parse_user_image_path:
-	free(user->image_path);
+parse_user_image:
+	free(user->image);
 parse_user_username:
 	free(user->username);
 parse_user_bson_error:

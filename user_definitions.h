@@ -16,7 +16,8 @@
 struct user {
   uint64_t user_id;
   char *username;
-  char *image_path;
+	uint32_t image_length;
+  uint8_t *image;
   struct personal_data *bio;
   int fragmentation;
   struct insta_relations *followers;

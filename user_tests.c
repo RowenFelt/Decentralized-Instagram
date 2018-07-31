@@ -21,7 +21,8 @@ int main(int argc, char *argv[])
 	struct insta_relations following;
 	cb.user_id = 12345;
 	cb.username = "cboswell";
-	cb.image_path = "/images/cboswell_image/fake_path";
+	cb.image = (uint8_t *) "/images/cboswell_image/fake_path";
+	cb.image_length = strlen((char *) cb.image);
 	pd.name = "Campbell Boswell";
 	cb.bio = &pd;
 	cb.fragmentation = 0;
@@ -42,7 +43,8 @@ int main(int argc, char *argv[])
   struct insta_relations test_following;
   test.user_id = 9999;
   test.username = "grunge";
-  test.image_path = "/images/darkness";
+  test.image = (uint8_t *) "/images/darkness";
+	test.image_length = strlen((char *) test.image);
   test_pd.name = "Kthulu";
   test.bio = &test_pd;
   test.fragmentation = 0;
@@ -61,7 +63,8 @@ int main(int argc, char *argv[])
 	struct insta_relations rf_following;
 	rf.user_id = 11254155;
 	rf.username = "rfelt";
-	rf.image_path = "/images/rfelt_image/fake_path";
+	rf.image = (uint8_t *) "/images/rfelt_image/fake_path";
+	rf.image_length = strlen((char *) rf.image);
 	rf_pd.name = "Rowen Felt";
 	rf.bio = &rf_pd;
 	rf.fragmentation = 0;
@@ -82,7 +85,8 @@ int main(int argc, char *argv[])
 	struct insta_relations pj_following;
 	pj.user_id = 159178;
 	pj.username = "pjohnson";
-	pj.image_path = "/images/pjohnson_image/fake_path";
+	pj.image = (uint8_t *) "/images/pjohnson_image/fake_path";
+	pj.image_length = strlen((char *) pj.image);
 	pj_pd.name = "Pete Johnson";
 	pj.bio = &pj_pd;
 	pj.fragmentation = 0;
@@ -103,7 +107,8 @@ int main(int argc, char *argv[])
 	struct insta_relations pj_imposter_following;
 	pj_imposter.user_id = 159179;
 	pj_imposter.username = "pjohnson_imposter";
-	pj_imposter.image_path = "/images/pjohnson_image/fake_path";
+	pj_imposter.image = (uint8_t *) "/images/pjohnson_image/fake_path";
+	pj_imposter.image_length = strlen((char *) pj_imposter.image);
 	pj_imposter_pd.name = "Pete Johnson";
 	pj_imposter.bio = &pj_imposter_pd;
 	pj_imposter.fragmentation = 0;
@@ -134,7 +139,7 @@ int main(int argc, char *argv[])
 
 	/* test search_user */
 	buf = search_user_by_name_mongo("cboswell", req_num, &result);
-	if(strlen(buf) != 774 || result != 1){
+	if(strlen(buf) != 871 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
@@ -145,7 +150,7 @@ int main(int argc, char *argv[])
 	
 	
 	buf = search_user_by_id_mongo(12345, req_num, &result);
-	if(strlen(buf) != 774 || result != 1){
+	if(strlen(buf) != 871 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
@@ -177,7 +182,7 @@ int main(int argc, char *argv[])
 	
 
 	buf = search_user_by_name_mongo("rfelt", req_num, &result);
-	if(strlen(buf) != 770 || result != 1){
+	if(strlen(buf) != 866 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
@@ -188,7 +193,7 @@ int main(int argc, char *argv[])
 	
 	
 	buf = search_user_by_name_mongo("Rowen Felt", req_num, &result);
-	if(strlen(buf) != 770 || result != 1){
+	if(strlen(buf) != 866 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
@@ -199,7 +204,7 @@ int main(int argc, char *argv[])
 	
 
 	buf = search_user_by_name_mongo("Pete Johnson", req_num, &result);
-	if(strlen(buf) != 1767 || result != 2){
+	if(strlen(buf) != 1961 || result != 2){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
@@ -210,7 +215,7 @@ int main(int argc, char *argv[])
 	
 
 	buf = search_user_by_id_mongo(159179, req_num, &result);
-	if(strlen(buf) != 888 || result != 1){
+	if(strlen(buf) != 985 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
@@ -221,7 +226,8 @@ int main(int argc, char *argv[])
 
 
 	buf = search_user_by_id_mongo(159178, req_num, &result);
-	if(strlen(buf) != 879 || result != 1){
+
+	if(strlen(buf) != 976 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
