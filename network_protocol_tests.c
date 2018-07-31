@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 	}
 	delete_dispatch(123);	
 	result = parse_server_command(user_tag_json, fd);
-	search_dispatch_by_id(49468, -1, &result);
+	search_dispatch_by_id(6689, -1, &result);
 	if(result != 1){
 		printf("TEST FAILED: push user_tag\n");
 		failed+=1;
@@ -162,9 +162,9 @@ int main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESSFUL: push user_tag\n");
 	}
-	delete_dispatch(49468);
+	delete_dispatch(6689);
 	result = parse_server_command(message, fd);
-	search_dispatch_by_id(7381, -1, &result);
+	search_dispatch_by_id(62938, -1, &result);
 	if(result != 1){
 		printf("TEST FAILED: push message*\n");
 		failed+=1;
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESSFUL: push message*\n");
 	}
-	delete_dispatch(7381);
+	delete_dispatch(62938);
 	result = parse_server_command(push_disp, fd);
 	search_dispatch_by_id(9965, -1, &result);
 	if(result != 1){

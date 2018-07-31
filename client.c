@@ -17,10 +17,14 @@
 #include "user_definitions.h" 
 #include "mongo_connect.h"
 #include "cass_user.h"
+#include "network_protocols.h"
 
 #define BUF_SIZE 4096
 #define PUSH_PROTOCOL "push"
 #define PUSH_SIZE 4
+#define USER_PROTOCOL "user"
+
+int push_local(char *command, char *port, int length);
 
 int main(int argc, char *argv[])
 {
@@ -79,18 +83,63 @@ int main(int argc, char *argv[])
 	
   printf("Connected\n");
 
-  /* infinite loop of reading from terminal, sending the data, and printing
-   * what we get back */
+	/* read command from input_fd and send to server */
 	n = read(input_fd, buf, BUF_SIZE);
 	send(conn_fd, buf, n, 0);
 	if(memcmp(type, PUSH_PROTOCOL, 4) == 0){
 		close(conn_fd);
 	}
 	else{
+		/* read response from server */
 		memset(buf, '\0', BUF_SIZE);
-		read(conn_fd, buf, BUF_SIZE);
-		printf("received:\n %s\n", buf);		  
+		int bytes_read = read(conn_fd, buf, BUF_SIZE);
+
+		/* determine to which collection to push */ 
+		n = lseek(input_fd, PUSH_SIZE+1, SEEK_SET);	
+		char temp[4];
+		read(input_fd, temp, 4);
+		char command[BUF_SIZE + INSTA_PROTOCOL_SIZE];
+		memset(command, '\0', BUF_SIZE + INSTA_PROTOCOL_SIZE);
+
+		if(memcmp(temp, USER_PROTOCOL, 4) == 0){
+			strncat(command, "push user**** ", INSTA_PROTOCOL_SIZE);
+		}
+		else{
+			strncat(command, "push dispatch ", INSTA_PROTOCOL_SIZE);	
+		} 
+		strncat(command, buf, bytes_read);  	
+		close(conn_fd);
+		push_local(command, dest_port, INSTA_PROTOCOL_SIZE + bytes_read);
 	}
-	exit(1);
 }
 
+int push_local(char *command, char *dest_port, int length)
+{
+	struct addrinfo hints, *res;
+  int conn_fd, rc;
+	
+/* create a socket */
+  conn_fd = socket(PF_INET, SOCK_STREAM, 0);
+  if(conn_fd == -1){
+    perror("create socket failed");
+  }
+
+  /* but we do need to find the IP address of the server */
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  if((rc = getaddrinfo("127.0.0.1", dest_port, &hints, &res)) != 0) {
+      printf("getaddrinfo failed: %s\n", gai_strerror(rc));
+      return -1;
+  }
+
+  /* connect to the server */
+  if(connect(conn_fd, res->ai_addr, res->ai_addrlen) < 0) {
+      perror("connect to server failed");
+      return -1;
+  }
+		
+	send(conn_fd, command, length, 0);
+	close(conn_fd);
+	return 0;
+}

@@ -21,7 +21,6 @@
 #include "dispatch_definitions.h"
 #include "mongo_connect.h"
 
-#define INSTA_PROTOCOL_SIZE 14
 #define LARGE_ID_SIZE 20
 
 static uint64_t read_id(int fd);
