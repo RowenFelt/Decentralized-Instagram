@@ -20,11 +20,12 @@
 
 #define BUF_SIZE 4096
 #define PUSH_PROTOCOL "push"
+#define PUSH_SIZE 4
 
 int main(int argc, char *argv[])
 {
   char *dest_user, *dest_port, *dest_hostname, *input_file;
-	char *type;
+	char type[4];
   struct addrinfo hints, *res;
   int conn_fd;
   char buf[BUF_SIZE];
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
   dest_user = argv[1];
   dest_port = argv[2];
 	input_file = argv[3];
-	type = argv[4];
+
 	input_fd = open(input_file, O_RDONLY);
 	if(input_fd == -1){
 		perror("client open");
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
   /* create a socket */
   conn_fd = socket(PF_INET, SOCK_STREAM, 0);
   if(conn_fd == -1){
-    perror("socket");
+    perror("create socket failed");
   }
 
   /* but we do need to find the IP address of the server */
@@ -58,15 +59,23 @@ int main(int argc, char *argv[])
   hints.ai_socktype = SOCK_STREAM;
   if((rc = getaddrinfo(dest_hostname, dest_port, &hints, &res)) != 0) {
       printf("getaddrinfo failed: %s\n", gai_strerror(rc));
-      exit(1);
+      return -1;
   }
 
   /* connect to the server */
   if(connect(conn_fd, res->ai_addr, res->ai_addrlen) < 0) {
-      perror("connect");
-      exit(2);
+      perror("connect to server failed");
+      return -1;
   }
-
+	
+	if((n = read(input_fd, type, PUSH_SIZE)) < 0){
+		perror("read command type");
+		return -1;
+	}
+	if((n = lseek(input_fd, 0, SEEK_SET)) < 0){
+		perror("lseek input_file");
+		return -1;
+	}	
 	
   printf("Connected\n");
 
