@@ -31,7 +31,8 @@ struct dispatch {
 };
 
 struct dispatch_body {
-	char *media_path;
+	int media_size;
+	uint8_t *media;
 	char *text;
 };
 

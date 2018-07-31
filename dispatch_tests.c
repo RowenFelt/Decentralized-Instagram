@@ -31,7 +31,8 @@ main(int argc, char* argv[])
 	struct dispatch_body *body = malloc(sizeof( struct dispatch_body));
 	struct dispatch_parent *parent = malloc(sizeof(struct dispatch_parent));
 	
-	body->media_path = "/home/cboswell/Desktop/cat.jpg";
+	body->media =(uint8_t*) "/home/cboswell/Desktop/cat.jpg";
+	body->media_size = strlen((char *)body->media); 
 	body->text = "Cat";
 	dis->body = body;
 
@@ -71,7 +72,8 @@ main(int argc, char* argv[])
 	body = malloc(sizeof( struct dispatch_body));
 	parent = malloc(sizeof(struct dispatch_parent));
 
-	body->media_path = "/home/cboswell/Desktop/doOOOOOOg.jpg";
+	body->media = (uint8_t *)"/home/cboswell/Desktop/doOOOOOOg.jpg";
+	body->media_size = strlen((char *)body->media); 
 	body->text = "Dog";
 	dis->body = body;
 
@@ -110,7 +112,8 @@ main(int argc, char* argv[])
 	body = malloc(sizeof( struct dispatch_body));
 	parent = malloc(sizeof(struct dispatch_parent));
 
-	body->media_path = "comment:";
+	body->media = (uint8_t *)"comment:";
+	body->media_size = strlen((char *)body->media); 
 	body->text = "Cool cat";
 	dis->body = body;
 
@@ -142,7 +145,8 @@ main(int argc, char* argv[])
 	body = malloc(sizeof( struct dispatch_body));
 	parent = malloc(sizeof(struct dispatch_parent));
 
-	body->media_path = "comment:";
+	body->media = (uint8_t *)"comment:";
+	body->media_size = strlen((char *)body->media); 
 	body->text = "Nice smile!";
 	dis->body = body;
 
@@ -172,7 +176,8 @@ main(int argc, char* argv[])
 	body = malloc(sizeof( struct dispatch_body));
 	parent = malloc(sizeof(struct dispatch_parent));
 	
-	body->media_path = "comment:";
+	body->media = (uint8_t *)"comment:";
+	body->media_size = strlen((char *)body->media); 
 	body->text = "wow, great picture";
 	dis->body = body;
 
@@ -202,7 +207,8 @@ main(int argc, char* argv[])
 	body = malloc(sizeof( struct dispatch_body));
 	parent = malloc(sizeof(struct dispatch_parent));
 	
-	body->media_path = "comment:";
+	body->media = (uint8_t *)"comment:";
+	body->media_size = strlen((char *)body->media); 
 	body->text = "wow, great picture";
 	dis->body = body;
 
@@ -233,7 +239,8 @@ main(int argc, char* argv[])
 	parent = malloc(sizeof(struct dispatch_parent));
 
 
-	body->media_path = "/home/cboswell/Desktop/nude.jpg";
+	body->media = (uint8_t *)"/home/cboswell/Desktop/nude.jpg";
+	body->media_size = strlen((char *)body->media); 
 	body->text = "my nudes";
 	dis->body = body;
 
@@ -270,7 +277,8 @@ main(int argc, char* argv[])
   parent = malloc(sizeof(struct dispatch_parent));
 
 
-  body->media_path = "/home/cboswell/Desktop/brooding.jpg";
+  body->media = (uint8_t *)"/home/cboswell/Desktop/brooding.jpg";
+	body->media_size = strlen((char *)body->media); 
   body->text = "dudes who brood aren't rude, just misunderstude";
   dis->body = body;
 
@@ -309,14 +317,15 @@ main(int argc, char* argv[])
 	num_failed = 0;
 
 	char *buf = search_dispatch_by_parent_id( 6666, -1, &result);		
-	if(strlen(buf) != 1742 || result != 3){
+	if(strlen(buf) != 2000 || result != 3){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_parent_id(6666, -1, &result)\n");
+	printf("search_dispatch_by_parent_id(6666, -1, &result)\n"
+				"\tbuf_size = %ld\n", strlen(buf));
 	//Testing insert_json_from_fd funcion from util.c, which uses dispatches 
 	//generated in this test file
 	//---------------------------------------------------------------------
@@ -335,7 +344,7 @@ main(int argc, char* argv[])
 	 * Uncomment to write to json_dispatch_test.txt if file is not present or 
 	 * needs to be updated
 	 */
-	//	if(write(fd, buf, 1742) != 1742){
+	//	if(write(fd, buf, 2000) != 2000){
 	//		perror("write");
 	//		return -1;
 	//	}
@@ -344,9 +353,9 @@ main(int argc, char* argv[])
 	 * Requires 3 random bytes to have been writen in json_dispatch test.txt 
 	 * first to test this part. Comment out if leading bytes not present
 	 */
-	int num_leading_bytes = 3;
-	char *leading_bytes = malloc(num_leading_bytes);
-	read(fd, leading_bytes, num_leading_bytes);
+//	int num_leading_bytes = 3;
+//	char *leading_bytes = malloc(num_leading_bytes);
+//	read(fd, leading_bytes, num_leading_bytes);
 
 	//attempt to read from fd and store data as bson documents in the
 	//dispatch collection
@@ -363,14 +372,15 @@ main(int argc, char* argv[])
 	//---------------------------------------------------------------------
 
 	buf = search_dispatch_by_id(1, -1, &result);
-	if(strlen(buf) != 607 || result != 1){
+	if(strlen(buf) != 693 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_id(1, -1, &result)\n");
+	printf("search_dispatch_by_id(1, -1, &result)\n"
+			"\tbuf_size = %ld\n", strlen(buf));
 	free(buf);	
 
 	buf = search_dispatch_by_id(20, -1, &result);
@@ -385,51 +395,55 @@ main(int argc, char* argv[])
 	free(buf);
 
 	buf = search_dispatch_by_user_audience(1234, NULL, 0, -1, &result);
-	if(strlen(buf) != 1410 || result != 2){
+	if(strlen(buf) != 1598 || result != 2){
 		printf("TEST FAILED: "); 
 		num_failed++;
 	}
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_user_audience(1234, NULL, O, 4, &result)\n");
+	printf("search_dispatch_by_user_audience(1234, NULL, O, 4, &result)\n" 
+					"\tbuf_size = %ld\n", strlen(buf));
 	free(buf);
 
 
 	uint64_t aud[2] = {4, 19};
 	buf = search_dispatch_by_user_audience(1234, aud, 2, -1, &result);
-	if(strlen(buf) != 666 || result != 1){
+	if(strlen(buf) != 762 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
 	}
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n");
+	printf("search_dispatch_by_user_audience(1234, aud, 2, -1, &result\n"
+				"\tbuf_size = %ld\n", strlen(buf));
 	free(buf);
 
 
 	buf = search_dispatch_by_tags("angstyteen", -1, &result);
-	if(strlen(buf) != 713 || result != 1){
+	if(strlen(buf) != 809 || result != 1){
 		printf("TEST FAILED: "); 
 		num_failed++;
 	}
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_tags('angstyteen', -1, &result)\n");
+	printf("search_dispatch_by_tags('angstyteen', -1, &result)\n"
+				"\tbuf_size = %ld\n", strlen(buf));
 	free(buf);
 	
 
 	buf = search_dispatch_by_user_tags(3, -1, &result);
-	if(strlen(buf) != 1410 || result != 2){
+	if(strlen(buf) != 1598 || result != 2){
 		printf("TEST FAILED: "); 
 		num_failed++;
 	}
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_user_tags(3, -1, &result)\n");
+	printf("search_dispatch_by_user_tags(3, -1, &result)\n" 
+				"\tbuf_size = %ld\n", strlen(buf));
 	free(buf);
 
 	if(num_failed == 0){
