@@ -30,11 +30,30 @@ main(int argc, char* argv[])
 	struct dispatch *dis = malloc(sizeof(struct dispatch));
 	struct dispatch_body *body = malloc(sizeof( struct dispatch_body));
 	struct dispatch_parent *parent = malloc(sizeof(struct dispatch_parent));
-	
-	body->media =(uint8_t*) "/home/cboswell/Desktop/cat.jpg";
+
+	//opening an image file
+	int image_fd = open("cat.jpg", O_RDONLY);
+	int image_size = 100954;
+	void *image_buf = malloc(image_size);
+	read(image_fd, image_buf, image_size); 
+
+	body->media = (uint8_t*) "/home/cboswell/Desktop/cat.jpg";
 	body->media_size = strlen((char *)body->media); 
 	body->text = "Cat";
 	dis->body = body;
+
+	/*testing view_media_from_binary function*/
+	/*
+	 * body->media =(uint8_t*) image_buf; //"/home/cboswell/Desktop/cat.jpg";
+	 *	body->media_size = image_size;// strlen((char *)body->media); 
+	 *	
+	 *	if(view_media_from_binary("binary_test.jpg", image_buf, image_size) < 0){
+	 *		printf("displaying media from binary failed");
+	 *		free(image_buf);
+	 *		return -1;
+	 *	}
+	 *	free(image_buf);
+	 */
 
 	dis->user_id = 1234;
 	dis->timestamp = time(NULL);
