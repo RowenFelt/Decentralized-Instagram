@@ -11,6 +11,8 @@
 #include "user_definitions.h"
 #include "dispatch_definitions.h"
 
+#define INSTA_PROTOCOL_SIZE 14
+
 int parse_server_command(int in, int out);
 
 #endif /* _NETWORK_PROTOCOLS_H */
