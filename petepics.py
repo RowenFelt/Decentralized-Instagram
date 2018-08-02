@@ -8,6 +8,7 @@ Authors: Rowen Felt and Campbell Boswell
 import pymongo
 import json
 import build_dispatch_json as bdj
+import build_user_json as buj
 from pymongo import MongoClient
 from subprocess import call
 import sys
@@ -66,7 +67,8 @@ def write_dispatch(media_path, body_text, user_id, audience, tags,
     notified_users = audience + user_tags
     notified_users.append(user_id)
     for i in notified_users:
-        client_command = ["../../../client", str(i), "3999", "new_dispatch.txt"]
+        client_command = ["./client", str(i), 
+                "3999", "new_dispatch.txt"]
         call(client_command)
     return call(["rm", "new_dispatch.txt"])     
 
@@ -90,6 +92,27 @@ def create_dispatch_command(dispatch_type, dispatch_json):
     else:
         print("INVALID DISPATCH TYPE")
         sys.exit()
+
+def write_user(user_id, username, image_path, name, fragmentation, 
+        followers, following):
+    '''
+    creates or updates a user object from the provided fields
+    '''
+    user_dict = {"user_id": user_id, "username": username, 
+        "image_path": image_path, "name": name, 
+        "fragmentation": fragmentation, "followers": followers, 
+        "following": following}
+    user_json = buj.build_user(user_dict)
+    if(user_json == None):
+        print("build_user() failed")
+        return None
+    command = "push user**** " + user_json
+    file = open("new_user.txt", "w")
+    file.write(command)
+    file.close()
+    client_command = ["./client", str(user_id), "3999", "new_user.txt"]
+    call(client_command)
+    return call(["rm", "new_user.txt"])
 
 def update_feed(user_id):
     '''

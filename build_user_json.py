@@ -19,9 +19,9 @@ def build_user(user):
 
     mongo_id = (' "_id" : { "$oid" : "' + str(ObjectId()) + '" }, ')
   
-    user_id = ('"user_id" : { "$numberLong" : "' + str(user['user_id']) + '"}, ')
+    user_id = ('"user_id" : { "$numberLong" : "' + str(user['user_id']) + '" }, ')
 
-    user_name = ('"username" : "' + user['user_name'] + '", ')
+    user_name = ('"username" : "' + user['username'] + '", ')
 
     #open the media specified by media path, read its contents to a buffer as
     #binary, and store its size
@@ -62,7 +62,7 @@ def build_user(user):
         following = following + ' ], '
     else:
         for i in user['following']:
-            following = following + '{ "$numberLong" : "' + str(i) + '"}, '
+            following = following + '{ "$numberLong" : "' + str(i) + '" }, '
         #remove the trailing comma from the last audience id
         following = following[:-2] + ' ] } '
 
