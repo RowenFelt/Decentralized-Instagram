@@ -12,7 +12,8 @@
 #include "util.c"
 #include "mongo_connect.h"
 
-int main(int argc, char *argv[])
+int 
+main(int argc, char *argv[])
 {
 	/* initialize test user structs */
 	struct user cb;

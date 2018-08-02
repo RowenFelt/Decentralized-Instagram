@@ -22,6 +22,10 @@ def search_user(user_id):
     return (collection.find_one({ "user_id": user_id }))
 
 def decode_following(user):
+    '''
+    Given a user object as dictionary, returns array
+    of following user_ids
+    '''
     decoded_user = user['following']
     return decoded_user['user_ids']    
 
@@ -96,7 +100,7 @@ def update_feed(user_id):
     user = search_user(user_id)
     following = decode_following(user)
     for i in following:
-        command = "pull all***** " + i
+        command = "pull all***** " + str(i)
         file = open("update_feed.txt", "w")
         file.write(command)
         file.close()
