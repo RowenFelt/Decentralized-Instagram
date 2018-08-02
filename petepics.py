@@ -1,6 +1,7 @@
 '''
 functions that represent user actions and
-associated helper methods
+associated helper methods.
+These functions must be run from nodes/<node>/tests directory!
 Authors: Rowen Felt and Campbell Boswell
 '''
 
@@ -65,7 +66,7 @@ def write_dispatch(media_path, body_text, user_id, audience, tags,
     notified_users = audience + user_tags
     notified_users.append(user_id)
     for i in notified_users:
-        client_command = ["./client", str(i), "3999", "new_dispatch.txt"]
+        client_command = ["../../../client", str(i), "3999", "new_dispatch.txt"]
         call(client_command)
     return call(["rm", "new_dispatch.txt"])     
 
