@@ -17,6 +17,7 @@ if [ $(grep FAIL test_suite_log | wc -l) -gt 0 ]; then
 	printf "${ERROR}$(grep FAIL test_suite_log)${RESET}\n"
 fi
 
+#test_cleanup deletes all inserted users and dispatches
 ./test_cleanup
 
 rm test_suite_log
