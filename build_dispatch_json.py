@@ -1,3 +1,8 @@
+'''
+funtions for building a dispatch json from a dictionary
+of associated fields
+Authors: Rowen Felt and Campbell Boswell
+'''
 import pymongo
 import time
 import datetime
@@ -6,25 +11,20 @@ import base64
 from bson.objectid import ObjectId
 
 
-#       TODO: verify that numberLong and numberInt's linup properly
-#       fix mongoid using ObjectId function if possible
-#       find a way to encode media as binary without converting to a string
-#       find a way to encode timestamps as the integer values returned by the datetime
-#       repeat the process for the user
 def build_dispatch(dis):
-        
-    #Dictionary dis has the following key value pairs:
-    #   media_path - the path to an image file for which the user has read permissions 
-    #   body_text - a caption for the media 
-    #   user_id - the user's id
-    #   audience - the audience of the the post as an array of user_id's
-    #   tags - any hashtags for the post, as an array of strings
-    #   user_tags - an array of user ids
-    #   parent_type - the type of the object the parent id references 
-    #   parent_id - either a user or dispatch id
-    #   fragmentation  
-    #   dispatch_id
-    
+    '''    
+    Dictionary dis has the following key value pairs:
+       media_path - the path to an image file for which the user has read permissions 
+       body_text - a caption for the media 
+       user_id - the user's id
+       audience - the audience of the the post as an array of user_id's
+       tags - any hashtags for the post, as an array of strings
+       user_tags - an array of user ids
+       parent_type - the type of the object the parent id references 
+       parent_id - either a user or dispatch id
+       fragmentation  
+       dispatch_id
+    ''' 
     #bson.objectid.ObjectId(str(dis['user_id']) + str(dis['dispatch_id'])) 
     mongo_id = (' "_id" : { "$oid" : "' + str(ObjectId()) + '" }, ')
   
@@ -65,7 +65,11 @@ def build_dispatch(dis):
         tags = tags + ' ], '
     else:
         for i in dis['tags']:
-            tags = tags + ' "' + str(i) + '", '
+            if(len(i) > 50):
+                print("tag " + str(i) + " too large, must be 50 characters or less")
+                return None 
+            else:
+                tags = tags + ' "' + str(i) + '", '
         tags = tags[:-2] + ' ], ' 
 
     
