@@ -335,7 +335,7 @@ main(int argc, char* argv[])
 
 	num_failed = 0;
 
-	char *buf = search_dispatch_by_parent_id( 6666, -1, &result);		
+	char *buf = search_dispatch_by_parent_id(6666, -1, &result);		
 	if(strlen(buf) != 2000 || result != 3){
 		printf("TEST FAILED: ");
 		num_failed++;

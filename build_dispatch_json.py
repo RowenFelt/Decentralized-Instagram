@@ -1,7 +1,10 @@
 import pymongo
+import time
 import datetime
 import bson
-import hashlib
+import base64
+from bson.objectid import ObjectId
+
 
 #       TODO: verify that numberLong and numberInt's linup properly
 #       fix mongoid using ObjectId function if possible
@@ -21,29 +24,26 @@ def build_dispatch(dis):
     #   parent_id - either a user or dispatch id
     #   fragmentation  
     #   dispatch_id
-
-    #build the mongo unique id from the user_id concatinated with the dispatch id 
-    hash_stuff = str(dis['user_id'] + dis['dispatch_id'])
-    mongo_id_value = hashlib.sha256(hash_stuff.encode('utf-8'))
-    mongo_id_value = mongo_id_value.digest()
-    mongo_id_value = mongo_id_value[0:12]
+    
     #bson.objectid.ObjectId(str(dis['user_id']) + str(dis['dispatch_id'])) 
-    mongo_id = (' "_id" : {"$oid" : "' + str(mongo_id_value) + '" }, ')
+    mongo_id = (' "_id" : { "$oid" : "' + str(ObjectId()) + '" }, ')
   
     #open the media specified by media path, read its contents to a buffer as
     #binary, and store its size
     with open(dis['media_path'], 'r+b') as f:
         media = f.read()
         media_size = len(media) 
-        body = ('""body" : { "media_size" : { "$numberInt" : "' + str(media_size) +
-                '" }, "media" : { "$binary" : { "base64": "' + str(media) + 
+        body = ('"body" : { "media_size" : { "$numberInt" : "' + str(media_size) +
+                '" }, "media" : { "$binary" : { "base64": "' + 
+                str(base64.b64encode(media))[2:-1] + 
                 '", "subType" : "00" } }, "text" : "' + dis['body_text'] +'" }, ')
 
-    user_id = ('"user_id" : { {$numberLong" : "' + str(dis['user_id']) + '"}, ')
+    user_id = ('"user_id" : { "$numberLong" : "' + str(dis['user_id']) + '"}, ')
    
 
     #generate timestamp and store as  
-    curent_time = datetime.datetime.utcnow()
+    #curent_time = datetime.datetime.utcnow()
+    curent_time = int(round(datetime.datetime.utcnow().timestamp() * 1000))
     timestamp = ('"timestamp" : { "$date" : { "$numberLong" : "' + 
                 str(curent_time) + '" } }, ')
 
@@ -65,8 +65,8 @@ def build_dispatch(dis):
         tags = tags + ' ], '
     else:
         for i in dis['tags']:
-            tags = tags + '{ "$numberLong" : "' + str(i) + '" }, '
-        tags = tags[:-2] + '], ' 
+            tags = tags + ' "' + str(i) + '", '
+        tags = tags[:-2] + ' ], ' 
 
     
     user_tags = ('"num_user_tags" : { "$numberInt" : "' + str(len(dis['user_tags'])) +
@@ -82,9 +82,9 @@ def build_dispatch(dis):
     #all dispatches are posts with the user as the parent
     parent = ('"dispatch_parent" : { "type" : { "$numberInt" : "' +
               str(dis['parent_type']) + '" }, "id" : { "$numberLong" : "' +
-              str(dis['parent_id']) + '"} }, "')
+              str(dis['parent_id']) + '"} }, ')
     fragmentation = ('"fragmentation" : { "$numberInt" : "' + str(dis['fragmentation'])
-                    + '" }, "')
+                    + '" }, ')
     dispatch_id = ('"dispatch_id" : { "$numberLong" : "' + str(dis['dispatch_id']) + 
                    '"} ')
     

@@ -33,14 +33,15 @@ def write_dispatch(media_path, body_text, user_id, audience, tags,
         "user_tags": user_tags, "parent_type": parent_type, 
         "parent_id": parent_id, "fragmentation": fragmentation,
         "dispatch_id": dispatch_id}
-    dispatch_json = bdj.build_dispatch_json(dispatch_dict)
+    dispatch_json = bdj.build_dispatch(dispatch_dict)
     command = create_dispatch_command(dispatch_type, dispatch_json)
     file = open("new_dispatch.txt", "w")
     file.write(command)
     file.close()
-    notified_users = audience + user_id + user_tags
+    notified_users = audience + user_tags
+    notified_users.append(user_id)
     for i in notified_users:
-        client_command = ["./client", i, "3999", "new_post.txt"]
+        client_command = ["./client", str(i), "3999", "new_dispatch.txt"]
         call(client_command)
     return call(["rm", "new_post.txt"])     
 

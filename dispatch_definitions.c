@@ -470,6 +470,7 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch)
 		if((media_size != media_size_actual)  || 
 			((body->media = malloc(media_size_actual)) == NULL)){
 			perror("malloc(body->media)");
+			printf("media size actual = %d\n", media_size_actual);
 			goto parse_bson_parent;
 		}
 		memcpy(body->media, media, media_size_actual);
