@@ -539,6 +539,11 @@ parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch)
 			bson_t *tags_array = bson_new_from_data(array, array_len);
 			bson_iter_init(&sub_iter, tags_array);	
 			while(bson_iter_next(&sub_iter) && i < dis->num_tags){
+				const char *tag_string = bson_iter_utf8(&sub_iter, NULL);
+				if(strlen(tag_string) >= MAX_TAG_SIZE){
+					printf("tag has length which exceded maximum\n");
+					goto parse_bson_media;
+				}
 				strcpy(dis->tags[i], bson_iter_utf8(&sub_iter, NULL));
 				i++;
 			}	
