@@ -19,8 +19,6 @@
 
 #include "cass_user.h"
 
-#define KEYSPACE "insta"
-#define TABLE "user"
 
 struct user_addition {
 	uint64_t id;

@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
   dest_port = argv[2];
 	input_file = argv[3];
 
+	printf("input file = %s\n", input_file);
 	input_fd = open(input_file, O_RDONLY);
 	if(input_fd == -1){
 		perror("client open");
