@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 funtions for building a dispatch json from a dictionary
 of associated fields
