@@ -41,6 +41,16 @@ def search_dispatch(dispatch_id):
     collection = db.dispatch
     return (collection.find_one({ "dispatch_id": dispatch_id }))
 
+def lookup_user(username):
+    '''
+    searches the cassandra hashtable for users with a
+    given name, creates pull user**** commands for each
+    returned user_id, and executes the pull command in
+    a client process. We wrote this as a c program because
+    it was easier to communicate with cassandra
+    '''
+    call(["./search_user", username])
+
 def write_dispatch(media_path, body_text, user_id, audience, tags,
     user_tags, parent_type, parent_id, fragmentation, dispatch_id, 
     dispatch_type):
