@@ -11,6 +11,8 @@ import base64
 from bson.objectid import ObjectId
 
 
+
+
 def build_dispatch(dis):
     '''    
     Dictionary dis has the following key value pairs:
@@ -25,6 +27,16 @@ def build_dispatch(dis):
        fragmentation  
        dispatch_id
     ''' 
+
+    '''
+    Constants that are originally defined in dispatch_definitions.h. These 
+    should alse be enforced when originially building a dispatch as a json,
+    hence their inclusion as "constants" here
+    '''
+    MAX_GROUP_SIZE = 32
+    MAX_NUM_TAGS = 30 
+    MAX_TAG_SIZE = 50
+
     #bson.objectid.ObjectId(str(dis['user_id']) + str(dis['dispatch_id'])) 
     mongo_id = (' "_id" : { "$oid" : "' + str(ObjectId()) + '" }, ')
   
@@ -47,7 +59,11 @@ def build_dispatch(dis):
     timestamp = ('"timestamp" : { "$date" : { "$numberLong" : "' + 
                 str(curent_time) + '" } }, ')
 
-
+    #error check against max audience size
+    if len(dis['audience']) > MAX_GROUP_SIZE:
+        print("audience size of " + str(len(dis['audience'])) + " too large, " +
+              "must be 32 users or less")
+        return None
     audience = ('"audience_size" : { "$numberInt" : "' + str(len(dis['audience'])) +  
                 '" }, "audience" : [ ')
     if(len(dis['audience']) == 0):
@@ -59,13 +75,17 @@ def build_dispatch(dis):
         audience = audience[:-2] + ' ], '
 
     
+    #error check against max number of tags 
+    if len(dis['tags']) > MAX_NUM_TAGS:
+        print("contains " + str(len(dis['tags'])) + " tags, must be 30 tags or fewer")
+        return None
     tags = ('"num_tags" : { "$numberInt" : "' + str(len(dis['tags'])) +
                  '" }, "tags" : [ ')
     if(len(dis['tags']) == 0):
         tags = tags + ' ], '
     else:
         for i in dis['tags']:
-            if(len(i) > 50):
+            if(len(i) > MAX_TAG_SIZE):
                 print("tag " + str(i) + " too large, must be 50 characters or less")
                 return None 
             else:
@@ -73,6 +93,11 @@ def build_dispatch(dis):
         tags = tags[:-2] + ' ], ' 
 
     
+    #error check against max number of user tags 
+    if len(dis['user_tags']) > MAX_NUM_TAGS:
+        print("contains " + str(len(dis['user_tags'])) +
+              " user tags, must be 30 users or fewer")
+        return None
     user_tags = ('"num_user_tags" : { "$numberInt" : "' + str(len(dis['user_tags'])) +
                  '" }, "user_tags" : [ ')
     if(len(dis['user_tags']) == 0):
