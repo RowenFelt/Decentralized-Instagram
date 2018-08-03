@@ -9,6 +9,10 @@
 
 #include <cassandra.h>
 
+
+#define KEYSPACE "insta"
+#define TABLE "user"
+
 struct cass_connect {
 	CassError err_code;
   CassCluster* cluster;
