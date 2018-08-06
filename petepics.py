@@ -139,7 +139,7 @@ def update_feed(user_id):
         file = open("update_feed.txt", "w")
         file.write(command)
         file.close()
-        client_command = ["./client", i, "3999", "update_feed.txt"]
+        client_command = ["./client", str(i), "3999", "update_feed.txt"]
         call(client_command)
     return call(["rm", "update_feed.txt"])
 
@@ -158,7 +158,7 @@ def search_hashtags(user_id, tag):
         file = open("search_hashtags.txt", "w")
         file.write(command)
         file.close()
-        client_command = ["./client", i, "3999", "search_hashtags.txt"]
+        client_command = ["./client", str(i), "3999", "search_hashtags.txt"]
         call(client_command)
     return call(["rm", "search_hashtags.txt"])
 
@@ -169,14 +169,14 @@ def view_profile(user_id):
     requires issuing a "pull child*** <user_id>" command, as well as
     a "pull user_tags <user_id>" command.
     '''
-    user = search_user(user_id)
     command_file = "view_profile.txt"
-    commands = ["pull child*** ", "pull user_tags "]
-    client_command = ["./client", i, "3999", "view_profile.txt"]
+    commands = ["pull child*** ", "pull user_tag ", "pull user**** "]
+    client_command = ["./client", str(user_id), "3999", "view_profile.txt"]
 
-    for i in range(len(commands)):
+    for i in commands:
+        print(i)
         file = open(command_file, "w")
-        file.write(command[i] + str(user_id))
+        file.write(i + str(user_id))
         file.close()
         call(client_command)
 
