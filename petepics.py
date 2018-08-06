@@ -105,10 +105,11 @@ def create_dispatch_command(dispatch_type, dispatch_json):
         sys.exit()
 
 def write_user(user_id, username, image_path, name, fragmentation, 
-        followers, following):
+        followers, following, ip):
     '''
     creates or updates a user object from the provided fields
     '''
+    add_user_cass(user_id, username, ip)
     user_dict = {"user_id": user_id, "username": username, 
         "image_path": image_path, "name": name, 
         "fragmentation": fragmentation, "followers": followers, 
@@ -181,4 +182,9 @@ def view_profile(user_id):
         call(client_command)
 
     return call(["rm", command_file])
-        
+
+def add_user_cass(user_id, username, ip):
+    '''
+    adds a new user object to the Cassandra insta.user database
+    '''
+    call(["./add_user", str(user_id), username, ip])
