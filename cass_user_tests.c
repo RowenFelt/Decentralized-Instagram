@@ -19,6 +19,7 @@
 
 #include "cass_user.h"
 
+#define NUM_USERS 5
 
 struct user_addition {
 	uint64_t id;
@@ -40,10 +41,11 @@ int main(int argc, char *argv[])
 		{12521512, "rowen", "4.5.6.7"},
 		{713717, "rowen", "1.2.3.4"},
 		{1435, "ricker", "140.233.20.181"},
-		{1485, "ellen", "140.233.20.153"}
+		{1485, "ellen", "140.233.20.153"},
+		{1475, "equinox", "140.233.20.154"}
 	};
 
-	for(int i = 0; i < 4; i++){
+	for(int i = 0; i < NUM_USERS; i++){
 		n = add_user(tests[i].id, tests[i].name, tests[i].ip);
 		if(n != 0){
 			printf("TEST FAILED: add_user\n");

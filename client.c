@@ -22,7 +22,7 @@
 #define BUF_SIZE 4096
 #define PUSH_PROTOCOL "push"
 #define PUSH_SIZE 4
-#define USER_PROTOCOL "user"
+#define USER_PROTOCOL "user*"
 
 int push_local(char *command, char *port, int length);
 
@@ -94,15 +94,16 @@ int main(int argc, char *argv[])
 		/* read response from server */
 		memset(buf, '\0', BUF_SIZE);
 		int bytes_read = read(conn_fd, buf, BUF_SIZE);
-
+		
 		/* determine to which collection to push */ 
 		n = lseek(input_fd, PUSH_SIZE+1, SEEK_SET);	
-		char temp[4];
-		read(input_fd, temp, 4);
+		char temp[5];
+		memset(temp, '\0', 5);
+		read(input_fd, temp, 5);
 		char command[BUF_SIZE + INSTA_PROTOCOL_SIZE];
 		memset(command, '\0', BUF_SIZE + INSTA_PROTOCOL_SIZE);
 
-		if(memcmp(temp, USER_PROTOCOL, 4) == 0){
+		if(memcmp(temp, USER_PROTOCOL, 5) == 0){
 			strncat(command, "push user**** ", INSTA_PROTOCOL_SIZE);
 		}
 		else{
@@ -125,7 +126,7 @@ int push_local(char *command, char *dest_port, int length)
     perror("create socket failed");
   }
 
-  /* but we do need to find the IP address of the server */
+  /* use localhost for IP */
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;

@@ -9,7 +9,8 @@ sys.path.append('./')
 import petepics as pp
 
 def main():
-    print("Insert ellen as user with user_id 1435")
+    print("Insert ellen as user with user_id 1485, ricker (1435)" +
+        " is a follower and following")
     pp.write_user(1485, "ellen", 
         "./nodes/ellen/tests/ellen_user_image",
         "Ellen DeGeneres", 0, [1435], [1435])
@@ -25,14 +26,14 @@ def main():
     else:
         print("FAILED: post 101 not found")
     
-    #print("Update feed, user 1435")
-    #pp.update_feed(1435)
+    print("Update feed, ellen (1485)")
+    pp.update_feed(1485)
     
-    #print("Search hashtags, user 1435, tag "lol")
-    #pp.search_hashtags(1435, "lol") //or some other tag that's part of a dispatch
+    print("Search hashtags, ellen (1485), tag 'lol'")
+    pp.search_hashtags(1485, "cool shit") #or some other tag that's part of a dispatch
    
-    #print("View profile, user 1435)
-    #pp.view_profile(1435)
+    print("View profile, ricker (1435)")
+    pp.view_profile(1435)
 
 if __name__ == "__main__":
     main()

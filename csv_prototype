@@ -1,0 +1,6 @@
+message, {dispatch fields}
+user, {user fields}
+feed, {user id}
+profile, {user id}
+search_tags, {userid, tags}
+lookup, {user_id}
