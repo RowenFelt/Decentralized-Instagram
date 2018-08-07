@@ -90,8 +90,8 @@ def build_dispatch(dis):
                 print("tag " + str(i) + " too large, must be 50 characters or less")
                 return None 
             else:
-                tags = tags + ' "' + str(i) + '", '
-        tags = tags[:-2] + ' ], ' 
+                tags = tags + '"' + str(i) + '", '
+        tags = tags[:-2] + '], ' 
 
     
     #error check against max number of user tags 
@@ -116,7 +116,7 @@ def build_dispatch(dis):
     fragmentation = ('"fragmentation" : { "$numberInt" : "' + str(dis['fragmentation'])
                     + '" }, ')
     dispatch_id = ('"dispatch_id" : { "$numberLong" : "' + str(dis['dispatch_id']) + 
-                   '"} ')
+                   '" } ')
     
     json_string = ('{' + mongo_id + body + user_id + timestamp + audience + tags 
             + user_tags +parent + fragmentation + dispatch_id + '}')

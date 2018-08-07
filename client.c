@@ -19,7 +19,7 @@
 #include "cass_user.h"
 #include "network_protocols.h"
 
-#define BUF_SIZE 4096
+#define BUF_SIZE 16000
 #define PUSH_PROTOCOL "push"
 #define PUSH_SIZE 4
 #define USER_PROTOCOL "user*"
@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
   dest_port = argv[2];
 	input_file = argv[3];
 
-	printf("input file = %s\n", input_file);
 	input_fd = open(input_file, O_RDONLY);
 	if(input_fd == -1){
 		perror("client open");
