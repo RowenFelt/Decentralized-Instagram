@@ -61,7 +61,7 @@ def build_user(user):
                  '{ "$numberInt" : "' + str(len(user['following'])) + '" }, ' +
                  '"user_ids" : [ ')
     if(len(user['following']) == 0):
-        following = following + '] }, '
+        following = following + '] } '
     else:
         for i in user['following']:
             following = following + '{ "$numberLong" : "' + str(i) + '" }, '
@@ -71,5 +71,4 @@ def build_user(user):
     
     json_string = ('{' + mongo_id + user_id + user_name + image + bio + 
                    fragmentation + followers + following + '}')
-    print(json_string)   
     return json_string
