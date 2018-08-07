@@ -13,7 +13,7 @@ def main():
         " is a follower and following")
     pp.write_user(1485, "ellen", 
         "./nodes/ellen/tests/ellen_user_image",
-        "Ellen DeGeneres", 0, [1435], [1435])
+        "Ellen DeGeneres", 0, [1435], [1435], "140.233.20.153")
     if(pp.search_user(1485)):
         print("SUCCESS: inserted user ellen")
     else:

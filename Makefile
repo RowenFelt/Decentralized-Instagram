@@ -25,8 +25,11 @@ COLOR_OUTPUT = 2>&1 |                                   \
 
 .PHONY: all
 
-all: cass_user_tests cass_user.so user_definitions.o user_definitions.so dispatch_definitions.o dispatch_definitions.so mongo_connect.o user_tests dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o test_cleanup search_user
+all: cass_user_tests cass_user.so user_definitions.o user_definitions.so dispatch_definitions.o dispatch_definitions.so mongo_connect.o user_tests dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o test_cleanup search_user add_user
 
+add_user: add_user.c cass_user.so
+	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOLINK) $(MONGOCOMP) $(COLOR_OUTPUT)
+	
 search_user: search_user.c cass_user.so
 	gcc $(CFLAGS) -o $@ $^ $(CASSFLAGS) $(MONGOLINK) $(MONGOCOMP) $(COLOR_OUTPUT)
 
@@ -83,4 +86,4 @@ cass_user_tests: cass_user_tests.c cass_user.so
 
 .PHONY: clean
 clean:
-	rm -f cass_user_tests cass_user.so cass_user.o util.o mongo_connect.o user_definitions.o user_tests user_definitions.so dispatch_definitions.o dispatch_definitions.so dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o test_cleanup search_user
+	rm -f cass_user_tests cass_user.so cass_user.o util.o mongo_connect.o user_definitions.o user_tests user_definitions.so dispatch_definitions.o dispatch_definitions.so dispatch_tests tcp_server client network_protocols.o network_protocols.so network_protocol_tests util.o test_cleanup search_user add_user

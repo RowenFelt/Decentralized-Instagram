@@ -17,7 +17,7 @@
 #include "network_protocols.h"
 
 #define BACKLOG 10
-#define BUF_SIZE 4096
+#define BUF_SIZE 10000
 
 struct connect_info{
   uint16_t remote_port;
