@@ -139,15 +139,14 @@ def update_feed(user_id):
     following = decode_following(user)
     if(len(following) == 0):
         return None
-    else:
-        for i in following:
-            command = "pull all***** " + str(i)
-            file = open("update_feed.txt", "w")
-            file.write(command)
-            file.close()
-            client_command = ["./client", str(i), "3999", "update_feed.txt"]
-            call(client_command)
-        call(["rm", "update_feed.txt"])
+    for i in following:
+        command = "pull all***** " + str(i)
+        file = open("update_feed.txt", "w")
+        file.write(command)
+        file.close()
+        client_command = ["./client", str(i), "3999", "update_feed.txt"]
+        call(client_command)
+    call(["rm", "update_feed.txt"])
     return 0
 
 def search_hashtags(user_id, tag):
@@ -164,15 +163,14 @@ def search_hashtags(user_id, tag):
     following = decode_following(user)
     if(len(following) == 0):
         return None
-    else:
-        for i in following:
-            command = "pull tags**** " + tag
-            file = open("search_hashtags.txt", "w")
-            file.write(command)
-            file.close()
-            client_command = ["./client", str(i), "3999", "search_hashtags.txt"]
-            call(client_command)
-        call(["rm", "search_hashtags.txt"])
+    for i in following:
+        command = "pull tags**** " + tag
+        file = open("search_hashtags.txt", "w")
+        file.write(command)
+        file.close()
+        client_command = ["./client", str(i), "3999", "search_hashtags.txt"]
+        call(client_command)
+    call(["rm", "search_hashtags.txt"])
     return 0
 
 def view_profile(user_id):

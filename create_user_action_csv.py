@@ -30,4 +30,11 @@ def create_csv(user, lines):
     probability = [.1, .7, .1, .05, .05,]
     for i in range(0,lines):
         draw = choice(options, p=probability)
-        print(draw) 
+        print(draw)
+
+
+def main():
+    user = {'user_id': 5, 'username': 'ron', 'image_path': '/this/image', 'name': 'Ron Weasley', 'fragmentation': 5, 'followers': [1, 23, 4, 5], 'following': [6, 3, 10], 'ip': '10.2.3.4'}
+
+if __name__ == "__main__":
+    main() 
