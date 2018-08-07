@@ -69,8 +69,9 @@ main(int argc, char *argv[])
 	    }
 	  }
 	}
-	
-	execlp("rm", "rm", file, (char *) NULL);
-	
+
+	if(result > 0){	
+		execlp("rm", "rm", file, (char *) NULL);
+	}
 }
 
