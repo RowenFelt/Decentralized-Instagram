@@ -26,7 +26,7 @@ def create_csv(user, lines, post_ids, usernames):
         for i in user['following']:
             following = following + ' ' + str(i)
     csvfile = writer(f, delimiter= ',') 
-    csvfile.writerow(['user', user['username'], user['image_path'],
+    csvfile.writerow(['user', user['user_id'], user['username'], user['image_path'],
         user['name'], str(user['fragmentation']), followers, 
         following, user['ip']])
 
@@ -60,14 +60,16 @@ def write_message_row(csvfile, user, overlap, words, post_ids):
     types = ['post', 'comment', 'message', 'user_tag']
     ptypes = [.05, .35, .35, .25]
     draw = choice(types, p=ptypes)
-    dispatch_id = int(random.getrandbits(64))
+    
+    #using 48 bits instead of 64 bits because of python int size
+    dispatch_id = int(random.getrandbits(48))
     
     if draw == 'post':
         tags = split_tags(random.sample(words, random.randint(0, 4)))
         user_tags = split_tags(random.sample(user['following'], 
             random.randint(0, len(user['following']) % 4)))
         csvfile.writerow(['message', user['image_path'], 'TEST POST',
-            user['user_id'], str(0), tags, user_tags, str(0), user['user_id'],
+            str(user['user_id']), ' ', tags, user_tags, str(0), str(user['user_id']),
             str(5), str(dispatch_id), 'post']) 
         post_ids.append(dispatch_id) 
     
@@ -77,7 +79,7 @@ def write_message_row(csvfile, user, overlap, words, post_ids):
             return
         parent_id = random.choice(post_ids)
         csvfile.writerow(['message', 'no image', 'TEST COMMENT',
-        user['user_id'], str(0), ' ', ' ', str(1), parent_id,
+        str(user['user_id']), ' ', ' ', ' ', str(1), str(parent_id),
         str(5), str(dispatch_id), 'comment'])              
     
     elif draw == 'message':
@@ -93,7 +95,7 @@ def write_message_row(csvfile, user, overlap, words, post_ids):
                 return   
             audience = str(random.choice(list(overlap)))   
         csvfile.writerow(['message', 'no image', 'TEST MESSAGE',
-            str(user['user_id']), audience, ' ', ' ', str(user['user_id']),
+            str(user['user_id']), audience, ' ', ' ', str(0), str(user['user_id']),
             str(5), str(dispatch_id), 'message']) 
     
     elif draw == 'user_tag':
@@ -103,7 +105,7 @@ def write_message_row(csvfile, user, overlap, words, post_ids):
             return
         parent = random.choice(post_ids)
         csvfile.writerow(['message', 'no image', 'TEST USER_TAG',
-            str(user['user_id']), str(0), ' ', str(user_tag), str(parent),
+            str(user['user_id']), ' ', ' ', str(user_tag), str(0), str(parent),
             str(5), str(dispatch_id), 'user_tag'])
 
 
@@ -163,11 +165,11 @@ def write_lookup_row(csvfile, user, usernames):
 def main():
     post_ids = []
     usernames = ['ellen', 'ricker', 'equinox']
-    ellen = {'user_id': 1485, 'username': 'ellen', 'image_path': '/this/image', 'name': 'Ellen Degeneres', 'fragmentation': 5, 'followers': [1435, 1475], 'following': [1435, 1475], 'ip': '140.233.20.153'}
+    ellen = {'user_id': 1485, 'username': 'ellen', 'image_path': 'steve.jpg', 'name': 'Ellen Degeneres', 'fragmentation': 5, 'followers': [1435, 1475], 'following': [1435, 1475], 'ip': '140.233.20.153'}
     create_csv(ellen, 1000, post_ids, usernames)
-    ricker = {'user_id': 1435, 'username': 'ricker', 'image_path': '/this/image', 'name': 'William T. Ricker', 'fragmentation': 5, 'followers': [1485, 1475], 'following': [1485, 1475], 'ip': '140.233.20.181'}
+    ricker = {'user_id': 1435, 'username': 'ricker', 'image_path': 'steve.jpg', 'name': 'William T. Ricker', 'fragmentation': 5, 'followers': [1485, 1475], 'following': [1485, 1475], 'ip': '140.233.20.181'}
     create_csv(ricker, 1000, post_ids, usernames)   
-    equinox = {'user_id': 1475, 'username': 'equinox', 'image_path': '/this/image', 'name': 'Noxy Knox', 'fragmentation': 5, 'followers': [1435, 1485], 'following': [1435, 1485], 'ip': '140.233.20.154'}
+    equinox = {'user_id': 1475, 'username': 'equinox', 'image_path': 'steve.jpg', 'name': 'Noxy Knox', 'fragmentation': 5, 'followers': [1435, 1485], 'following': [1435, 1485], 'ip': '140.233.20.154'}
     create_csv(equinox, 1000, post_ids, usernames)
 
 

@@ -10,12 +10,17 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/random.h>
 
 #include "user_definitions.h"
 #include "cass_user.h"
 #include "network_protocols.h"
 
-int
+#define FILE_NAME_SIZE 100
+#define RANDOM_INT_SIZE 50
+#define BASE_FILE_NAME 19
+
+int 
 main(int argc, char *argv[])
 {
 	char *username;
@@ -25,9 +30,18 @@ main(int argc, char *argv[])
 
 	username = argv[1]; 
 	int buffer_size = 30;
-	char *file = "search_user_command";
+	char file[FILE_NAME_SIZE] ;
 	char *port = "3999";
 	char *client = "./client";
+	int random[1];
+	char random_ints[RANDOM_INT_SIZE];
+
+	memset(file, '\0', FILE_NAME_SIZE);
+	memcpy(file, "search_user_command", BASE_FILE_NAME);	
+	memset(random_ints, '\0', RANDOM_INT_SIZE);
+	getrandom(random, sizeof(int), GRND_RANDOM);
+	n = sprintf(random_ints, "%d", random[0]); 
+	strncat(file, random_ints, n);
 	
 	user_ids = get_user_id_by_username(KEYSPACE, TABLE, username, &result);
 
@@ -52,7 +66,6 @@ main(int argc, char *argv[])
 			return -1;
 		}
 		close(fd);
-		printf("file = %s\n", file);		
 		if((pid = fork()) < 0){
 			perror("search_user - fork error:");
 			return -1;

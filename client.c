@@ -80,8 +80,6 @@ int main(int argc, char *argv[])
 		perror("lseek input_file");
 		return -1;
 	}	
-	
-  printf("Connected\n");
 
 	/* read command from input_fd and send to server */
 	n = read(input_fd, buf, BUF_SIZE);

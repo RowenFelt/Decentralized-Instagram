@@ -47,10 +47,13 @@ def build_dispatch(dis):
         with open(dis['media_path'], 'r+b') as f:
             media = f.read()
             media_size = len(media) 
-            body = ('"body" : { "media_size" : { "$numberInt" : "' + str(media_size) +
-                    '" }, "media" : { "$binary" : { "base64": "' + 
-                    str(base64.b64encode(media))[2:-1] + 
-                    '", "subType" : "00" } }, "text" : "' + dis['body_text'] +'" }, ')
+    else:
+        media = b'no image'
+        media_size = len(media)
+    body = ('"body" : { "media_size" : { "$numberInt" : "' + str(media_size) +
+            '" }, "media" : { "$binary" : { "base64": "' + 
+            str(base64.b64encode(media))[2:-1] + 
+            '", "subType" : "00" } }, "text" : "' + dis['body_text'] +'" }, ')
 
     user_id = ('"user_id" : { "$numberLong" : "' + str(dis['user_id']) + '"}, ')
    

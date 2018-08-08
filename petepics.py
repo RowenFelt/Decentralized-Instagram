@@ -13,6 +13,7 @@ import build_user_json as buj
 from pymongo import MongoClient
 from subprocess import call
 import sys
+import random
 
 def search_user(user_id):
     '''
@@ -72,16 +73,16 @@ def write_dispatch(media_path, body_text, user_id, audience, tags,
         print("build_dispatch() failed")
         return None
     command = create_dispatch_command(dispatch_type, dispatch_json)
-    file = open("new_dispatch.txt", "w")
+    file = open(str(user_id) + "new_dispatch.txt", "w")
     file.write(command)
     file.close()
     notified_users = audience + user_tags
     notified_users.append(user_id)
     for i in notified_users:
         client_command = ["./client", str(i), 
-                "3999", "new_dispatch.txt"]
+                "3999", str(user_id) + "new_dispatch.txt"]
         call(client_command)
-    return call(["rm", "new_dispatch.txt"])     
+    return call(["rm", str(user_id) + "new_dispatch.txt"])     
 
 def create_dispatch_command(dispatch_type, dispatch_json):
     '''
@@ -119,12 +120,12 @@ def write_user(user_id, username, image_path, name, fragmentation,
         print("build_user() failed")
         return None
     command = "push user**** " + user_json
-    file = open("new_user.txt", "w")
+    file = open(username + "new_user.txt", "w")
     file.write(command)
     file.close()
-    client_command = ["./client", str(user_id), "3999", "new_user.txt"]
+    client_command = ["./client", str(user_id), "3999", username + "new_user.txt"]
     call(client_command)
-    return call(["rm", "new_user.txt"])
+    return call(["rm", username + "new_user.txt"])
 
 def update_feed(user_id):
     '''
@@ -141,12 +142,12 @@ def update_feed(user_id):
         return None
     for i in following:
         command = "pull all***** " + str(i)
-        file = open("update_feed.txt", "w")
+        file = open(str(user_id) + "update_feed.txt", "w")
         file.write(command)
         file.close()
-        client_command = ["./client", str(i), "3999", "update_feed.txt"]
+        client_command = ["./client", str(i), "3999", str(user_id) + "update_feed.txt"]
         call(client_command)
-    call(["rm", "update_feed.txt"])
+    call(["rm", str(user_id) + "update_feed.txt"])
     return 0
 
 def search_hashtags(user_id, tag):
@@ -165,12 +166,12 @@ def search_hashtags(user_id, tag):
         return None
     for i in following:
         command = "pull tags**** " + tag
-        file = open("search_hashtags.txt", "w")
+        file = open(str(user_id) + "search_hashtags.txt", "w")
         file.write(command)
         file.close()
-        client_command = ["./client", str(i), "3999", "search_hashtags.txt"]
+        client_command = ["./client", str(i), "3999", str(user_id) + "search_hashtags.txt"]
         call(client_command)
-    call(["rm", "search_hashtags.txt"])
+    call(["rm", str(user_id) + "search_hashtags.txt"])
     return 0
 
 def view_profile(user_id):
@@ -180,12 +181,12 @@ def view_profile(user_id):
     requires issuing a "pull child*** <user_id>" command, as well as
     a "pull user_tags <user_id>" command.
     '''
-    command_file = "view_profile.txt"
+    # use a random number for the filename to prevent conflicts
+    command_file = str(random.randint(1,100000)) + "view_profile.txt"
     commands = ["pull child*** ", "pull user_tag ", "pull user**** "]
-    client_command = ["./client", str(user_id), "3999", "view_profile.txt"]
+    client_command = ["./client", str(user_id), "3999", command_file]
 
     for i in commands:
-        print(i)
         file = open(command_file, "w")
         file.write(i + str(user_id))
         file.close()
