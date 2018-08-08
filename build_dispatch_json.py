@@ -41,15 +41,16 @@ def build_dispatch(dis):
     #bson.objectid.ObjectId(str(dis['user_id']) + str(dis['dispatch_id'])) 
     mongo_id = (' "_id" : { "$oid" : "' + str(ObjectId()) + '" }, ')
   
-    #open the media specified by media path, read its contents to a buffer as
-    #binary, and store its size
-    with open(dis['media_path'], 'r+b') as f:
-        media = f.read()
-        media_size = len(media) 
-        body = ('"body" : { "media_size" : { "$numberInt" : "' + str(media_size) +
-                '" }, "media" : { "$binary" : { "base64": "' + 
-                str(base64.b64encode(media))[2:-1] + 
-                '", "subType" : "00" } }, "text" : "' + dis['body_text'] +'" }, ')
+    if dis['media_path'] != 'no image':
+        #open the media specified by media path, read its contents to a buffer as
+        #binary, and store its size
+        with open(dis['media_path'], 'r+b') as f:
+            media = f.read()
+            media_size = len(media) 
+            body = ('"body" : { "media_size" : { "$numberInt" : "' + str(media_size) +
+                    '" }, "media" : { "$binary" : { "base64": "' + 
+                    str(base64.b64encode(media))[2:-1] + 
+                    '", "subType" : "00" } }, "text" : "' + dis['body_text'] +'" }, ')
 
     user_id = ('"user_id" : { "$numberLong" : "' + str(dis['user_id']) + '"}, ')
    
