@@ -89,26 +89,43 @@ int main(int argc, char *argv[])
 		close(conn_fd);
 	}
 	else{
-		/* read response from server */
+		char *final = NULL;
+		int final_size = 0;
+		int bytes_read = 0;
 		memset(buf, '\0', BUF_SIZE);
-		int bytes_read = recv(conn_fd, buf, BUF_SIZE, MSG_WAITALL);
+		while((bytes_read = recv(conn_fd, buf, BUF_SIZE, MSG_WAITALL)) > 0){
+			/* read response from server */
+			final_size += bytes_read;
+			final = realloc(final, final_size);
+			if(final == NULL){
+				break;
+			}
+			memcpy(final + final_size - bytes_read, buf, bytes_read);
+			memset(buf, '\0', BUF_SIZE);		
+		}
 		/* determine to which collection to push */ 
 		n = lseek(input_fd, PUSH_SIZE+1, SEEK_SET);	
 		char temp[5];
 		memset(temp, '\0', 5);
 		read(input_fd, temp, 5);
-		char command[BUF_SIZE + INSTA_PROTOCOL_SIZE];
-		memset(command, '\0', BUF_SIZE + INSTA_PROTOCOL_SIZE);
+		char *command = malloc(INSTA_PROTOCOL_SIZE + final_size);
+		if(command == NULL){
+			perror("client: malloc");
+			return -1;
+		}
+	
+		memset(command, '\0', INSTA_PROTOCOL_SIZE + final_size);
 
 		if(memcmp(temp, USER_PROTOCOL, 5) == 0){
-			strncat(command, "push user**** ", INSTA_PROTOCOL_SIZE);
+			memcpy(command, "push user**** ", INSTA_PROTOCOL_SIZE);
 		}
 		else{
-			strncat(command, "push dispatch ", INSTA_PROTOCOL_SIZE);	
+			memcpy(command, "push dispatch ", INSTA_PROTOCOL_SIZE);	
 		} 
-		strncat(command, buf, bytes_read);  	
+		memcpy(command + INSTA_PROTOCOL_SIZE, final, final_size);  	
 		close(conn_fd);
-		push_local(command, dest_port, INSTA_PROTOCOL_SIZE + bytes_read);
+		push_local(command, dest_port, INSTA_PROTOCOL_SIZE + final_size);
+		free(final);
 	}
 }
 
@@ -139,6 +156,7 @@ int push_local(char *command, char *dest_port, int length)
   }
 		
 	send(conn_fd, command, length, 0);
+	free(command);
 	close(conn_fd);
 	return 0;
 }
