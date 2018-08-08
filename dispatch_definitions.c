@@ -54,7 +54,8 @@ insert_dispatch(struct dispatch *dis) {
   //(in which case duplicate will remain equal to 1)
   int duplicate = 0;
   int req_num = -1; 
-  num = search_dispatch_by_id(dis->dispatch_id, req_num, &duplicate); 	
+	int length = 0;
+  num = search_dispatch_by_id(dis->dispatch_id, req_num, &duplicate, &length); 	
   if(duplicate > 0){
 		mongo_teardown(&cn); 
 		return -1;
@@ -182,7 +183,7 @@ delete_dispatch(uint64_t dispatch_id){
 
 
 char *
-search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result){ 
+search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result, int *length){ 
 /* 
  * Takes a dispatch id, an upper limit of dispatches to 
  * query for, and a pointer to an integer to be updated
@@ -216,7 +217,7 @@ search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result){
 	}
 	 
 	*result = 0;
-	char* buf = build_json(cursor, req_num, result);	 
+	char* buf = build_json(cursor, req_num, result, length);	 
   mongoc_cursor_destroy(cursor);
   bson_destroy(target_dispatch);
   mongo_teardown(&cn);
@@ -225,7 +226,7 @@ search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result){
 
 char *
 search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
-																 int audience_size, int req_num, int *result){
+												 int audience_size, int req_num, int *result, int *length){
 /* 
  * Takes a user id of the dispatch poster, a list of user
  * ids of the audience, an upper limit of dispatches to 
@@ -279,7 +280,7 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
 	}
 
 	*result = 0;
-	char *buf = build_json(cursor, req_num, result);
+	char *buf = build_json(cursor, req_num, result, length);
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
 	mongo_teardown(&cn);	
@@ -287,7 +288,8 @@ search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience,
 }
 
 char *
-search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
+search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, 
+						int *result, int *length){
 /* 
  * Takes a dispatch id, an upper limit of dispatches to
  * query for, and a pointer to an integer to be updated
@@ -326,7 +328,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
 		return NULL;
 	}
 	*result = 0;		
-	char *buf = build_json(cursor, req_num, result);
+	char *buf = build_json(cursor, req_num, result, length);
 
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
@@ -336,7 +338,7 @@ search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result){
 }
 
 char *
-search_dispatch_by_tags(const char* query, int req_num, int *result){
+search_dispatch_by_tags(const char* query, int req_num, int *result, int *length){
 /* 
  * Takes a string query that describes a tag, an upper
  * limit of dispatches to query for, and a pointer to 
@@ -369,7 +371,7 @@ search_dispatch_by_tags(const char* query, int req_num, int *result){
 		return NULL;
 	}
 	*result = 0;
-	char *buf = build_json(cursor, req_num, result);
+	char *buf = build_json(cursor, req_num, result, length);
 
 	mongoc_cursor_destroy(cursor);
 	bson_destroy(target_dispatch);
@@ -379,7 +381,7 @@ search_dispatch_by_tags(const char* query, int req_num, int *result){
 }
 
 char *
-search_dispatch_by_user_tags(uint64_t query, int req_num, int *result){
+search_dispatch_by_user_tags(uint64_t query, int req_num, int *result, int *length){
 /* 
  * Takes a user id of a tagged user, an upper
  * limit of dispatches to query for, and a pointer to 
@@ -412,7 +414,7 @@ search_dispatch_by_user_tags(uint64_t query, int req_num, int *result){
 		return NULL;
 	}
 	*result = 0;
-  char *buf = build_json(cursor, req_num, result);
+  char *buf = build_json(cursor, req_num, result, length);
 
   mongoc_cursor_destroy(cursor);
   bson_destroy(target_dispatch);
@@ -703,6 +705,7 @@ handle_dispatch_bson(bson_t *doc)
 	//parse to user struct
   struct dispatch new_dis;
   int result;
+	int length;
 
 	if(doc == NULL){
 		printf("invalid doc pointer in handle_dispatch_bson\n");
@@ -715,7 +718,7 @@ handle_dispatch_bson(bson_t *doc)
   }
 
   //search for duplicate by dispatch id
-  char * buf = search_dispatch_by_id(new_dis.dispatch_id, 1, &result);
+  char * buf = search_dispatch_by_id(new_dis.dispatch_id, 1, &result, &length);
 	free(buf);
 
   if(result > 0 && delete_dispatch(new_dis.dispatch_id) < 0){

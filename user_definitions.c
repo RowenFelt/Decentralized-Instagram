@@ -38,6 +38,7 @@ insert_user(struct user *new_user)
 	char buf[ARRAY_INDICES];
 	int n;
 	time_t creation;
+	int length;
 
 	cn.uri_string = MONGO_URI;
 
@@ -49,7 +50,7 @@ insert_user(struct user *new_user)
 	}
 	
 	// -1 is interperated as INT_MAX, and we want an exhaustive search for duplicates
-	char *num = search_user_by_id_mongo(new_user->user_id, -1, &n); 
+	char *num = search_user_by_id_mongo(new_user->user_id, -1, &n, &length); 
 	free(num);
 	if(n > 0){
 		goto insert_error;
@@ -219,7 +220,7 @@ print_user_struct(struct user *user)
 
 
 char * 
-search_user_by_name_mongo(char *username, int req_num, int *result)
+search_user_by_name_mongo(char *username, int req_num, int *result, int *length)
 {
 	/* 
 	 * search for a user by username in the mongo database
@@ -256,7 +257,7 @@ search_user_by_name_mongo(char *username, int req_num, int *result)
 	}
 	
 	*result = 0; //Default expectation is no results were found
-	buf = build_json(cursor, req_num, result);	
+	buf = build_json(cursor, req_num, result, length);	
 
 	if(mongoc_cursor_error (cursor, &error)) {
     printf("Cursor error in build_json: %s\n", error.message);
@@ -275,7 +276,7 @@ search_user_by_name_mongo_error:
 
 
 char * 
-search_user_by_id_mongo(uint64_t user_id, int req_num, int *result)
+search_user_by_id_mongo(uint64_t user_id, int req_num, int *result, int *length)
 {
 	/*
 	 * search for a user in the mongoDB list of 
@@ -304,7 +305,7 @@ search_user_by_id_mongo(uint64_t user_id, int req_num, int *result)
 		goto search_user_by_id_mongo_error;
 	}
 	*result = 0; //Default expectation is no results were found
-	char *buf = build_json(cursor, req_num, result); 
+	char *buf = build_json(cursor, req_num, result, length); 
 
   if (mongoc_cursor_error (cursor, &error)) {
     printf("cursor error in build_json(): %s\n", error.message);
@@ -329,6 +330,7 @@ handle_user_bson(bson_t *doc)
 	//parse to user struct
 	struct user new_user;
 	int result;
+	int length;
 
 	if(doc == NULL){
 		printf("NULL doc pointer in handle_user_bson\n");
@@ -341,7 +343,7 @@ handle_user_bson(bson_t *doc)
 	}
 
 	//search for duplicate by user id
-	char *buf = search_user_by_id_mongo(new_user.user_id, 1, &result);
+	char *buf = search_user_by_id_mongo(new_user.user_id, 1, &result, &length);
 	free(buf);
  
 	if(result > 0 && delete_user(new_user.user_id) < 0){

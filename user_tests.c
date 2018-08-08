@@ -125,7 +125,7 @@ main(int argc, char *argv[])
 	pj_imposter.following = &pj_imposter_following;
 	
 	/* test insert_user */
-	int result, req_num, num_failed;
+	int result, req_num, num_failed, length;
 	char *buf;
 
 	req_num = -1; //The number of results requested in queries
@@ -139,7 +139,7 @@ main(int argc, char *argv[])
 	insert_user(&test);
 
 	/* test search_user */
-	buf = search_user_by_name_mongo("cboswell", req_num, &result);
+	buf = search_user_by_name_mongo("cboswell", req_num, &result, &length);
 	if(strlen(buf) != 871 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
@@ -147,10 +147,10 @@ main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_for_user_by_name_mongo('cboswell', req_num, &result)\n");
+	printf("search_for_user_by_name_mongo('cboswell', req_num, &result, &length)\n");
 	
 	
-	buf = search_user_by_id_mongo(12345, req_num, &result);
+	buf = search_user_by_id_mongo(12345, req_num, &result, &length);
 	if(strlen(buf) != 871 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
@@ -158,7 +158,7 @@ main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_for_user_by_id_mongo(12345, req_num, &result)\n");
+	printf("search_for_user_by_id_mongo(12345, req_num, &result, &length)\n");
 	
 	
 	if(delete_user(12345) != 1){
@@ -171,7 +171,7 @@ main(int argc, char *argv[])
 	printf("delete_user(12345)\n");
 	
 
-	buf = search_user_by_id_mongo(12345, req_num, &result);
+	buf = search_user_by_id_mongo(12345, req_num, &result, &length);
 	if(buf != NULL || result != 0){
 		printf("TEST FAILED: ");
 		num_failed++;
@@ -182,7 +182,7 @@ main(int argc, char *argv[])
 	printf("search_user_by_id_mongo(12345) where 12345 is not a valid id\n");
 	
 
-	buf = search_user_by_name_mongo("rfelt", req_num, &result);
+	buf = search_user_by_name_mongo("rfelt", req_num, &result, &length);
 	if(strlen(buf) != 866 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
@@ -190,10 +190,10 @@ main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_user_by_name_mongo('rfelt', req_num, &result)\n");
+	printf("search_user_by_name_mongo('rfelt', req_num, &result, &length)\n");
 	
 	
-	buf = search_user_by_name_mongo("Rowen Felt", req_num, &result);
+	buf = search_user_by_name_mongo("Rowen Felt", req_num, &result, &length);
 	if(strlen(buf) != 866 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
@@ -201,10 +201,10 @@ main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_user_by_name_mongo('Rowen Felt', req_num, &result)\n");
+	printf("search_user_by_name_mongo('Rowen Felt', req_num, &result, &length)\n");
 	
 
-	buf = search_user_by_name_mongo("Pete Johnson", req_num, &result);
+	buf = search_user_by_name_mongo("Pete Johnson", req_num, &result, &length);
 	if(strlen(buf) != 1961 || result != 2){
 		printf("TEST FAILED: ");
 		num_failed++;
@@ -212,10 +212,10 @@ main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_user_by_name_mongo('Pete Johson', req_num, &result)\n");
+	printf("search_user_by_name_mongo('Pete Johson', req_num, &result, &length)\n");
 	
 
-	buf = search_user_by_id_mongo(159179, req_num, &result);
+	buf = search_user_by_id_mongo(159179, req_num, &result, &length);
 	if(strlen(buf) != 985 || result != 1){
 		printf("TEST FAILED: ");
 		num_failed++;
@@ -223,10 +223,10 @@ main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_user_by_id_mongo(159179, req_num, &result)\n");
+	printf("search_user_by_id_mongo(159179, req_num, &result, &length)\n");
 
 
-	buf = search_user_by_id_mongo(159178, req_num, &result);
+	buf = search_user_by_id_mongo(159178, req_num, &result, &length);
 
 	if(strlen(buf) != 976 || result != 1){
 		printf("TEST FAILED: ");
@@ -235,7 +235,7 @@ main(int argc, char *argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_user_by_id_mongo(159178, req_num, &result)\n");
+	printf("search_user_by_id_mongo(159178, req_num, &result, &length)\n");
 	
 	//Open the test file
   int fd;

@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 	}	
 
 	/* read command from input_fd and send to server */
+	memset(buf, '\0', BUF_SIZE);
 	n = read(input_fd, buf, BUF_SIZE);
 	send(conn_fd, buf, n, 0);
 	if(memcmp(type, PUSH_PROTOCOL, 4) == 0){
@@ -90,8 +91,7 @@ int main(int argc, char *argv[])
 	else{
 		/* read response from server */
 		memset(buf, '\0', BUF_SIZE);
-		int bytes_read = read(conn_fd, buf, BUF_SIZE);
-		
+		int bytes_read = recv(conn_fd, buf, BUF_SIZE, MSG_WAITALL);
 		/* determine to which collection to push */ 
 		n = lseek(input_fd, PUSH_SIZE+1, SEEK_SET);	
 		char temp[5];

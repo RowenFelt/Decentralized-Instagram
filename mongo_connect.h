@@ -28,7 +28,7 @@ struct mongo_connection {
 
 int mongo_connect(struct mongo_connection *cn, char *db_name, char *coll_name);
 int mongo_teardown(struct mongo_connection *cn);
-char* build_json(mongoc_cursor_t *cursor, int req_num, int *result);
+char* build_json(mongoc_cursor_t *cursor, int req_num, int *result, int *length);
 int insert_json_from_fd(int fd, char *collection_name);
 
 #endif /* _MONGO_CONNECT_H */

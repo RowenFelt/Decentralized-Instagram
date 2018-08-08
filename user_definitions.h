@@ -43,8 +43,8 @@ void user_heap_cleanup(struct user *user);
 void print_user_struct(struct user *user);
 
 /* user search functions */
-char * search_user_by_name_mongo(char *username, int req_num, int *result);
-char * search_user_by_id_mongo(uint64_t user_id, int req_num, int *result);
+char * search_user_by_name_mongo(char *username, int req_num, int *result, int *length);
+char * search_user_by_id_mongo(uint64_t user_id, int req_num, int *result, int *length);
 
 /* higher level definitions used by the server */
 int handle_user_bson(bson_t *doc);

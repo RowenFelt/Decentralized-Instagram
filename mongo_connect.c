@@ -87,7 +87,7 @@ mongo_teardown(struct mongo_connection *cn)
 }
 
 char*
-build_json(mongoc_cursor_t *cursor, int req_num, int *result){
+build_json(mongoc_cursor_t *cursor, int req_num, int *result, int *length){
 	/* builds a json object using a cursor from a mongo query. 
    * the returned buffer has been malloced to the correct size
    * and must be freed by the caller. Returns the json as a 
@@ -136,6 +136,7 @@ build_json(mongoc_cursor_t *cursor, int req_num, int *result){
 		*end = '\0';
 
 	}	
+	*length = buf_size;
 	return buf;
 }
 

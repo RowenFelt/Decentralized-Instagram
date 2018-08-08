@@ -118,15 +118,16 @@ pull_all(int in, int out){
 	uint64_t user_id;
 	int result = 0;
 	int n = 0;
+	int length = 0;
 
 	user_id = read_id(in);
 	
-	bson = search_dispatch_by_user_audience(user_id, NULL, 0, -1, &result);
+	bson = search_dispatch_by_user_audience(user_id, NULL, 0, -1, &result, &length);
 	if(bson == NULL){
 		printf("PULL ALL failed, search function returned NULL\n");
 		return -1;
 	}
-	n =	write(out, bson, strlen(bson)); 
+	n =	write(out, bson, length); 
 	if(n < 0) {
 		perror("pull_all write");
 		return -1;
@@ -141,15 +142,16 @@ pull_child(int in, int out){
 	int result = 0;
 	int n = 0;
 	uint64_t parent_id;
+	int length = 0;
 	
 	parent_id = read_id(in);
 
-	bson = search_dispatch_by_parent_id(parent_id, -1, &result);
+	bson = search_dispatch_by_parent_id(parent_id, -1, &result, &length);
 	if(bson == NULL){
 		printf("PULL CHILD failed, search function returned NULL\n");
 		return -1;
 	}
-	n =	write(out, bson, strlen(bson));
+	n =	write(out, bson, length);
 	if(n < 0){
 		perror("pull_child write");
 		return -1;
@@ -164,15 +166,16 @@ pull_dispatch(int in, int out){
 	int result = 0;
 	int n = 0;
 	uint64_t dispatch_id;
+	int length = 0;
 
 	dispatch_id = read_id(in);
 		
-	bson = search_dispatch_by_id(dispatch_id, 1, &result);
+	bson = search_dispatch_by_id(dispatch_id, 1, &result, &length);
 	if(bson == NULL){
 		printf("PULL ONE failed, search function returned NULL\n");
 		return -1;
 	}   	
-	n = write(out, bson, strlen(bson));
+	n = write(out, bson, length);
 	if(n < 0){
 		perror("pull_dispatch write");
 		return -1;
@@ -187,15 +190,16 @@ pull_user(int in, int out){
 	int result = 0;
 	int n = 0;
 	uint64_t user_id;
+	int length = 0;
 
 	user_id = read_id(in);
 	
-	bson = search_user_by_id_mongo(user_id, -1, &result);	
+	bson = search_user_by_id_mongo(user_id, -1, &result, &length);	
 	if(bson == NULL){
 		printf("PULL USER failed, search function returned NULL\n");
 		return -1;
 	}
-	n = write(out, bson, strlen(bson));
+	n = write(out, bson, length);
 	if(n < 0){
 		perror("pull_user write");
 		return -1;
@@ -212,15 +216,16 @@ pull_user_tags(int in, int out){
 	int result = 0;
 	int n = 0;
 	uint64_t user_id;
+	int length = 0;
 
 	user_id = read_id(in);
 	
-	bson = search_dispatch_by_user_tags(user_id, -1, &result);	
+	bson = search_dispatch_by_user_tags(user_id, -1, &result, &length);	
 	if(bson == NULL){
 		printf("PULL USER TAGS failed, search function returned NULL\n");
 		return -1;
 	}
-	n = write(out, bson, strlen(bson));
+	n = write(out, bson, length);
 	if(n < 0) {
 		perror("pull_user_tags write");
 		return -1;
@@ -235,6 +240,7 @@ pull_tags(int in, int out){
 	char *bson, *query;
 	int result = 0;
 	int n = 0;
+	int length = 0;
 	char str[100];
 	memset(str, '\0', 100);
 	read(in, str, 100);
@@ -249,12 +255,13 @@ pull_tags(int in, int out){
 	if ((newline=strchr(query, '\n')) != NULL){
     *newline = '\0';
 	}
-	bson = search_dispatch_by_tags(query, -1, &result);	
+	
+	bson = search_dispatch_by_tags(query, -1, &result, &length);	
 	if(bson == NULL){
 		printf("PULL TAGS failed, search function returned NULL\n");
 		return -1;
 	}
-	n = write(out, bson, strlen(bson));
+	n = write(out, bson, length);
   if(n < 0) {
     perror("pull_tags write");
     return -1;

@@ -45,11 +45,13 @@ struct dispatch_parent {
 int insert_dispatch(struct dispatch *dis);
 int delete_dispatch(uint64_t dispatch_id);
 /* Search Mongo dispatch collection */
-char *search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result);
-char *search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, 						      	int audience_size, int req_num, int *result);
-char *search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result);
-char *search_dispatch_by_tags(const char *query, int req_num, int *result);
-char *search_dispatch_by_user_tags(uint64_t query, int req_num, int *result);
+char *search_dispatch_by_id(uint64_t dispatch_id, int req_num, int *result, int *length);
+char *search_dispatch_by_user_audience(uint64_t user_id, uint64_t *audience, 						      	int audience_size, int req_num, int *result, int *length);
+char *search_dispatch_by_parent_id(uint64_t dispatch_id, int req_num, int *result, 
+			int *length);
+char *search_dispatch_by_tags(const char *query, int req_num, int *result, int *length);
+char *search_dispatch_by_user_tags(uint64_t query, int req_num, int *result, 
+			int *length);
 /* transition between Mongo readable bson and dispatch structs */
 int parse_dispatch_bson(struct dispatch *dis, const bson_t *bson_dispatch);
 int print_dispatch_struct(struct dispatch *dis);

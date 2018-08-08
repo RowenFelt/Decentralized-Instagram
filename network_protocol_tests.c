@@ -143,8 +143,10 @@ int main(int argc, char *argv[])
 
 	
 	/* test push protocols */
+	int length = 0;
+
 	result = parse_server_command(child_json, fd);
-	search_dispatch_by_id(123, -1, &result);
+	search_dispatch_by_id(123, -1, &result, &length);
 	if(result != 1){
 		printf("TEST FAILED: push child***\n");
 		failed+=1;
@@ -154,7 +156,7 @@ int main(int argc, char *argv[])
 	}
 	delete_dispatch(123);	
 	result = parse_server_command(user_tag_json, fd);
-	search_dispatch_by_id(6689, -1, &result);
+	search_dispatch_by_id(6689, -1, &result, &length);
 	if(result != 1){
 		printf("TEST FAILED: push user_tag\n");
 		failed+=1;
@@ -164,7 +166,7 @@ int main(int argc, char *argv[])
 	}
 	delete_dispatch(6689);
 	result = parse_server_command(message, fd);
-	search_dispatch_by_id(62938, -1, &result);
+	search_dispatch_by_id(62938, -1, &result, &length);
 	if(result != 1){
 		printf("TEST FAILED: push message*\n");
 		failed+=1;
@@ -174,7 +176,7 @@ int main(int argc, char *argv[])
 	}
 	delete_dispatch(62938);
 	result = parse_server_command(push_disp, fd);
-	search_dispatch_by_id(9965, -1, &result);
+	search_dispatch_by_id(9965, -1, &result, &length);
 	if(result != 1){
 		printf("TEST FAILED: push dispatch\n");
 		failed+=1;
@@ -184,7 +186,7 @@ int main(int argc, char *argv[])
 	}
 	delete_dispatch(9965);
 	result = parse_server_command(push_user, fd);
-	search_user_by_id_mongo(69696969, -1, &result);
+	search_user_by_id_mongo(69696969, -1, &result, &length);
 	if(result != 1){
 		printf("TEST FAILED: push user***\n");
 		failed+=1;
