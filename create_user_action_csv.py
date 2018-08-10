@@ -165,11 +165,11 @@ def write_lookup_row(csvfile, user, usernames):
 def main():
     post_ids = []
     usernames = ['ellen', 'ricker', 'equinox']
-    ellen = {'user_id': 1485, 'username': 'ellen', 'image_path': 'steve.jpg', 'name': 'Ellen Degeneres', 'fragmentation': 5, 'followers': [1435, 1475], 'following': [1435, 1475], 'ip': '140.233.20.153'}
+    ellen = {'user_id': 1485, 'username': 'ellen', 'image_path': 'steve.jpg', 'name': 'Ellen Degeneres', 'fragmentation': 0, 'followers': [1435, 1475], 'following': [1435, 1475], 'ip': '140.233.20.153'}
     create_csv(ellen, 1000, post_ids, usernames)
-    ricker = {'user_id': 1435, 'username': 'ricker', 'image_path': 'steve.jpg', 'name': 'William T. Ricker', 'fragmentation': 5, 'followers': [1485, 1475], 'following': [1485, 1475], 'ip': '140.233.20.181'}
+    ricker = {'user_id': 1435, 'username': 'ricker', 'image_path': 'steve.jpg', 'name': 'William T. Ricker', 'fragmentation': 0, 'followers': [1485, 1475], 'following': [1485, 1475], 'ip': '140.233.20.181'}
     create_csv(ricker, 1000, post_ids, usernames)   
-    equinox = {'user_id': 1475, 'username': 'equinox', 'image_path': 'steve.jpg', 'name': 'Noxy Knox', 'fragmentation': 5, 'followers': [1435, 1485], 'following': [1435, 1485], 'ip': '140.233.20.154'}
+    equinox = {'user_id': 1475, 'username': 'equinox', 'image_path': 'steve.jpg', 'name': 'Noxy Knox', 'fragmentation': 0, 'followers': [1435, 1485], 'following': [1435, 1485], 'ip': '140.233.20.154'}
     create_csv(equinox, 1000, post_ids, usernames)
 
 

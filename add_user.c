@@ -24,7 +24,8 @@ main(int argc, char *argv[])
 	user_id = atoll(argv[1]);
 	username = argv[2]; 
 	ip = argv[3];
-	
+
+	keyspace_table_init("insta", "user");
 	n = add_user(user_id, username, ip);
 	if(n < 0){
 		printf("Error inserting user into Cassandra\n");

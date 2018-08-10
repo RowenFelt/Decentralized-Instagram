@@ -53,8 +53,8 @@ int keyspace_table_init(char *keyspace, char *table){
 
   /* Create table */
 	sprintf(create_table_query, "CREATE TABLE %s.%s(%s %s, %s %s, %s %s, \
-		PRIMARY KEY (%s, %s))",keyspace, table, primary_field, primary_type, \
-		field_1, type_1, field_2, type_2, primary_field, field_1);
+		PRIMARY KEY (%s))",keyspace, table, primary_field, primary_type, \
+		field_1, type_1, field_2, type_2, primary_field);
   create_table = cass_statement_new(create_table_query, 0);
   statement_future = cass_session_execute(connection.session, create_table);
 
@@ -80,15 +80,16 @@ int add_user(uint64_t user_id, char *username, char *ip){
 
 	session_connection(&connection);
 
-  add_user_statement= cass_statement_new("INSERT INTO insta.user \
-		(user_id, username, ip_addr) VALUES ( ?, ?, ?)", 3);
+  add_user_statement= cass_statement_new("UPDATE insta.user \
+		SET username = ?, ip_addr = ? \
+		WHERE user_id = ?", 3);
 
-	cass_statement_bind_int64(add_user_statement, 0, (int64_t) user_id);
 	cass_inet_from_string(ip, &ip_inet);
-	cass_statement_bind_string(add_user_statement, 1, username);
-	cass_statement_bind_inet(add_user_statement, 2, ip_inet);
-
-  insert_future = cass_session_execute(connection.session, add_user_statement);
+	cass_statement_bind_string(add_user_statement, 0, username);
+	cass_statement_bind_inet(add_user_statement, 1, ip_inet);
+	cass_statement_bind_int64(add_user_statement, 2, (int64_t) user_id);
+  
+	insert_future = cass_session_execute(connection.session, add_user_statement);
   connection.err_code = cass_future_error_code(insert_future);
 
 
@@ -158,6 +159,7 @@ uint64_t *get_user_id_by_username(char *keyspace, char *table, char *username, i
 	}
 	if(count ==  0){
 		printf("no results found for username: %s\n", username);
+		free(result);
 		return NULL;
 	}
 	CassIterator *iterator = cass_iterator_from_result(user_query_result);

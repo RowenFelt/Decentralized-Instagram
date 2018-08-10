@@ -344,8 +344,7 @@ main(int argc, char* argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_parent_id(6666, -1, &result, &length)\n"
-				"\tbuf_size = %ld\n", strlen(buf));
+	printf("search_dispatch_by_parent_id(6666, -1, &result, &length)\n");
 	//Testing insert_json_from_fd funcion from util.c, which uses dispatches 
 	//generated in this test file
 	//---------------------------------------------------------------------
@@ -399,8 +398,7 @@ main(int argc, char* argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_id(1, -1, &result, &length)\n"
-			"\tbuf_size = %ld\n", strlen(buf));
+	printf("search_dispatch_by_id(1, -1, &result, &length)\n");
 	free(buf);	
 
 	buf = search_dispatch_by_id(20, -1, &result, &length);
@@ -422,8 +420,7 @@ main(int argc, char* argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_user_audience(1234, NULL, O, 4, &result, &length)\n" 
-					"\tbuf_size = %ld\n", strlen(buf));
+	printf("search_dispatch_by_user_audience(1234, NULL, O, 4, &result, &length)\n"); 
 	free(buf);
 
 
@@ -436,8 +433,7 @@ main(int argc, char* argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_user_audience(1234, aud, 2, -1, &result, &length\n"
-				"\tbuf_size = %ld\n", strlen(buf));
+	printf("search_dispatch_by_user_audience(1234, aud, 2, -1, &result, &length\n");
 	free(buf);
 
 
@@ -449,8 +445,7 @@ main(int argc, char* argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_tags('angstyteen', -1, &result, &length)\n"
-				"\tbuf_size = %ld\n", strlen(buf));
+	printf("search_dispatch_by_tags('angstyteen', -1, &result, &length)\n");
 	free(buf);
 	
 
@@ -462,8 +457,7 @@ main(int argc, char* argv[])
 	else{
 		printf("TEST SUCCESS: ");
 	}
-	printf("search_dispatch_by_user_tags(3, -1, &result, &length)\n" 
-				"\tbuf_size = %ld\n", strlen(buf));
+	printf("search_dispatch_by_user_tags(3, -1, &result, &length)\n"); 
 	free(buf);
 
 	if(num_failed == 0){
