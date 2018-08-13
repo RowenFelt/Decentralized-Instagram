@@ -152,8 +152,8 @@ def update_feed(user_id):
 
 def search_hashtags(user_id, tag):
     '''
-    allows a user to seach the dispatches of the individuals they
-    follow for instances of the specified hashtag which are 
+    allows a user to search the dispatches of the individuals they
+    follow for instances of the specified tag which are 
     included in the dispatch definitions. This is achieved by using
     the "pull tags**** <tag>" command across all users in the 
     primary user's follow list
@@ -176,7 +176,7 @@ def search_hashtags(user_id, tag):
 
 def view_profile(user_id):
     '''
-    pulls all dispatches for which a given user is the owner, as well
+    pulls all dispatches for which a given user is the parent, as well
     as all of the dispatches that a given user is tagged in. This 
     requires issuing a "pull child*** <user_id>" command, as well as
     a "pull user_tags <user_id>" command.
